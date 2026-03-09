@@ -44,6 +44,9 @@ export const ExternalView = () => {
     // -------------------------------------------------------------
     // 【Store (状態管理) からのデータ取得】
     // -------------------------------------------------------------
+    // ユーザーがControlPanel（UI操作パネル）から入力した環境情報はStoreを経由して、
+    // 即座にこの3Dコンポーネント（ExternalView）に自動反映されます。
+    // この分離アーキテクチャにより、「UIの操作」と「3Dの描画」が疎結合に保たれています。
     const rainLevel = useVehicleStore(s => s["Vehicle.Exterior.Air.RainIntensity"]); // 雨量 (0-100)
 
     // デフロスタ（前・後）の状態
@@ -56,7 +59,10 @@ export const ExternalView = () => {
             <div className="absolute inset-0 bg-gradient-to-b from-sky-300 to-indigo-100 opacity-80 z-0" />
 
             {/* ======== 雨天エフェクト描画 ======== */}
-            {/* 降雨密度を大幅に下げて視認性を高める (maxを少数に制限し、透明度を薄くする) */}
+            {/* 
+              Storeの rainLevel 変数に応じて、雨粒のアニメーションを動的に生成・増減させます。
+              降雨密度を大幅に下げて視認性を高めるため、(maxを少数に制限し、透明度を薄くする)調整をしています。
+            */}
             {rainLevel > 0 && Array.from({ length: Math.max(1, Math.ceil(rainLevel / 40)) }).map((_, i) => (
                 <div
                     key={i}
@@ -103,7 +109,11 @@ export const ExternalView = () => {
                     {/* --- 地面（パーキング風アスファルト＆水たまり） --- */}
                     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.35, 0]} receiveShadow>
                         <planeGeometry args={[100, 100]} />
-                        {/* 雨量に応じて地面の反射（水たまり）を直感的に変化させる */}
+                        {/* 
+                          雨量に応じて地面の反射（水たまり）を直感的に変化させるロジック。
+                          Storeから渡ってくる `rainLevel` パラメータを計算式に組み込むことで、
+                          「雨が強くなるほど地面の反射が強くなり、ツルツルになる」という物理シミュレーションを実現。
+                        */}
                         {rainLevel > 0 ? (
                             <MeshReflectorMaterial
                                 blur={[300, 100]}

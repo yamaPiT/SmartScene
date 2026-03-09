@@ -8,6 +8,14 @@ interface ScenarioBlockProps {
     depth?: number;
 }
 
+// ----------------------------------------------------------------------------------
+// シナリオツリーの再帰的描画コンポーネント
+// ----------------------------------------------------------------------------------
+// StoreにJSON形式で保持されている `scenarios` の階層構造（Node）を受け取り、
+// それが BLOCK, IF, ACTION, WAIT などのどのタイプかに応じて適切なReact要素として描画します。
+// 子要素（children や thenBody/elseBody）を持っている場合は、
+// その中で自分自身（<ScenarioBlock />）を再度呼び出すことで、深いネスト構造も自動的に描画する「再帰処理」を行っています。
+
 const renderCondition = (cond: Condition): string => {
     if ('conditions' in cond) {
         return cond.conditions.map(c => `(${renderCondition(c)})`).join(` ${cond.operator} `);
@@ -38,6 +46,7 @@ export const ScenarioBlock = ({ node, depth = 0 }: ScenarioBlockProps) => {
                 {renderHeader(<Layers size={16} className="text-gray-400" />, `BLOCK`, node.description, node.reference)}
 
                 <div className="pl-4 border-l border-gray-700 flex flex-col gap-3">
+                    {/* 子ノードを再帰的にすべて描画 */}
                     {node.children.map((child, i) => (
                         <ScenarioBlock key={child.id || i} node={child} depth={depth + 1} />
                     ))}

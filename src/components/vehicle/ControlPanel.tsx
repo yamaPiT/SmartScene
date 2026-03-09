@@ -51,14 +51,20 @@ export const ControlPanel = () => {
 
     // -------------------------------------------------------------
     // 【各種コントロールのヘルパー関数群】
-    // このセクションでは、ボタンが押された時の「振る舞い（ビジネスロジック）」を定義しています
+    // このセクションでは、ボタンが押された時の「振る舞い（ビジネスロジック）」を定義しています。
+    // 特に「窓の開閉」は、単なるON/OFFではなく「ボタンを押している間だけ窓が動く」という
+    // 物理的なアナログ操作をUIレベルでシミュレートするための複雑な制御を行っています。
     // -------------------------------------------------------------
 
+    // 窓の開閉ボタンが「押された（Press）」瞬間の処理
     const handleWindowPress = (target: string, action: 'OPEN' | 'CLOSE') => {
         const state = useVehicleStore.getState();
         const updates: any = {};
         const targets = { ...state["Internal.WindowTarget"] };
 
+        // イグニッションが起動(START)している場合のみ、この操作を「ユーザーによる手動操作(Manual Override)」
+        // としてフラグを立て、万が一同じタイミングでシナリオエンジンが窓を動かそうとしても、
+        // ユーザーの操作が優先ブロックするようにします。
         if (state["Vehicle.IgnitionState"] === 'START') {
             const flags = { ...state["Internal.ManualOverrideFlags"] };
             if (target === 'ALL') {
@@ -79,6 +85,7 @@ export const ControlPanel = () => {
         state.updateState(updates);
     };
 
+    // 窓の開閉ボタンから「指が離れた（Release）」瞬間の処理
     const handleWindowRelease = (target: string) => {
         const state = useVehicleStore.getState();
         const updates: any = {};
@@ -87,10 +94,13 @@ export const ControlPanel = () => {
 
         const processRelease = (posKey: string, vssKey: keyof typeof state) => {
             // ALWAYS STOP exactly where it is on release (Press and Hold)
+            // アニメーションによって現在位置まで進んでいる「実際の窓の位置(currentPos)」を
+            // 新たな「目標位置(target)」に上書きすることで、窓の動作をその場でピタッと止めます。
             const currentPos = state[vssKey] as number;
             targets[posKey] = currentPos;
 
-            // Update user memory to remember this stop point
+            // イグニッションON時は、この「止めた位置」をユーザーが意図した最新の設定値として
+            // UserMemoryState に記録し、後で「元の状態に戻る」際の復元ポイントとします。
             if (state["Vehicle.IgnitionState"] === 'START') {
                 memory[vssKey as string] = currentPos;
             }
@@ -112,6 +122,7 @@ export const ControlPanel = () => {
         state.updateState(updates);
     };
 
+    // 「一括開閉ボタン（ALL OPEN / ALL CLOSE）」がクリックされた時の処理
     const handleWindowAllClick = (action: 'OPEN' | 'CLOSE') => {
         const state = useVehicleStore.getState();
         const updates: any = {};

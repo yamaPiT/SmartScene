@@ -7,6 +7,12 @@ import { ScenarioNode, Condition, Action } from "@/lib/scenarioTypes";
 export const ScenarioRunner = () => {
     const { scenarios } = useVehicleStore();
     const ignition = useVehicleStore(s => s["Vehicle.IgnitionState"]);
+
+    // -------------------------------------------------------------
+    // 【シナリオエンジンの内部状態】
+    // runningSequences: WAIT（待機）を含む非同期ブロックが現在実行中かを判定するためのロック（多重実行防止）
+    // prevConditionStates: IFノードの条件が「前回評価時にTrueだったか」を記録（エッジ検出用）
+    // -------------------------------------------------------------
     const runningSequences = useRef<Set<string>>(new Set());
     const prevConditionStates = useRef<Record<string, boolean>>({});
 
@@ -52,8 +58,16 @@ export const ScenarioRunner = () => {
                 const currentConditionTrue = evaluateCondition(state, node.condition);
                 const prevConditionTrue = !!prevConditionStates.current[node.id];
 
+                // -------------------------------------------------------------
+                // 【ポジティブ・エッジ検出 (Positive Edge Detection)】
+                // 条件が「False から True に切り替わった瞬間」のみをトリガーとして捉えます。
+                // ずっと条件を満たし続けている場合（例：雨がずっと降っている）に、
+                // 毎秒アクションが発動してユーザーの操作を妨害するのを防ぎます。
+                // -------------------------------------------------------------
                 if (currentConditionTrue && !prevConditionTrue) {
                     // Positive Edge Detected! Reset overrides and set trigger.
+                    // 新たなシナリオが発火したため、過去の手動オーバーライド記録を一掃し、
+                    // このシナリオの制御を最優先にします。
                     const updates: any = {};
                     updates["Internal.ActiveScenarioTrigger"] = node.id;
                     updates["Internal.ManualOverrideFlags"] = {};
@@ -66,10 +80,12 @@ export const ScenarioRunner = () => {
                     const blockId = node.thenBody.type === 'BLOCK' ? node.thenBody.id : node.id;
 
                     // Avoid re-entry for running sequences (simple lock)
+                    // すでに実行中のブロック（WAITで待機中など）には再入しない
                     if (runningSequences.current.has(blockId)) return;
 
                     // Determine if we need to lock (if contains WAIT)
-                    // A deep check is better, but simple stringify check is robust enough for MVP
+                    // ブロック内にWAIT（非同期待機）が含まれるか簡易チェックし、
+                    // 含まれる場合はロック用の runningSequences にブロックIDを登録して実行
                     const containsWait = JSON.stringify(node.thenBody).includes('"type":"WAIT"');
 
                     if (containsWait) {
@@ -77,6 +93,7 @@ export const ScenarioRunner = () => {
                         try {
                             await executeNode(node.thenBody);
                         } finally {
+                            // 実行が完全に終わったらロックを解除
                             runningSequences.current.delete(blockId);
                         }
                     } else {
@@ -129,7 +146,11 @@ export const ScenarioRunner = () => {
             else if (node.type === 'ACTION') {
                 const flags = state["Internal.ManualOverrideFlags"] || {};
 
-                // Whitelist: DirectionIndicator and Hazard are exempt from manual override blocks
+                // -------------------------------------------------------------
+                // 【マニュアルオーバーライド (手動優先) 判定】
+                // ユーザーが手動で操作した部位(Flagsに記録あり)は、シナリオが勝手に変更しないようブロックします。
+                // ただし、灯火類（ウインカーやハザード）はシナリオ主導で動かすことが多いため例外(Whitelist)とします。
+                // -------------------------------------------------------------
                 const isWhitelisted = node.action.target.includes("DirectionIndicator") || node.action.target.includes("Hazard");
 
                 if (flags[node.action.target] && !isWhitelisted) {
@@ -138,6 +159,8 @@ export const ScenarioRunner = () => {
                 }
 
                 // ** OVERRIDE CHECK **
+                // Storeで定義された USER_OVERRIDE_DURATION (例:3秒) 以内にユーザー操作があった場合も
+                // 一時的にシナリオの実行をブロックし、ユーザー操作とAIの「操作の取り合い(チャタリング)」を防ぎます。
                 const lastInteract = state.lastUserInteract[node.action.target] || 0;
                 if (Date.now() - lastInteract < USER_OVERRIDE_DURATION) {
                     return;
@@ -170,6 +193,12 @@ export const ScenarioRunner = () => {
             }
         };
 
+        // -------------------------------------------------------------
+        // 【エンジンのメインループ】
+        // 100ms周期で全てのシナリオツリーをルートから評価(executeNode)し続けます。
+        // （VSSの状態が変更されたタイミングでのイベント駆動ではなく、
+        //   ゲームエンジンのようにループの中で毎フレーム状態を監視する「ポーリング型」を採用しています）
+        // -------------------------------------------------------------
         const interval = setInterval(() => {
             scenarios.forEach(scenario => {
                 executeNode(scenario);

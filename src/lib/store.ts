@@ -2,6 +2,19 @@ import { create } from 'zustand';
 import { VehicleState } from './types';
 import { ScenarioNode } from './scenarioTypes';
 
+/*
+  =============================================================================
+  【グローバル状態管理 (Store)】
+  このファイルは、本教育用シミュレータの中枢となる状態管理（Zustand）を定義しています。
+  
+  ■ 主な役割:
+  1. OSDVI / VSS (Vehicle Signal Specification) に準拠した車載API状態の保持
+  2. シナリオエンジン（ScenarioRunner）が監視・実行するためのシナリオツリー(JSON)の保持
+  3. 「手動操作」と「自動制御（スマート機能）」が衝突した際の『優先権（オーバーライド）』や、
+     自動制御から復帰する際の『状態キャッシュ（PreRunStateCache）』の管理
+  =============================================================================
+*/
+
 export const USER_OVERRIDE_DURATION = 3000; // ms
 
 interface VehicleStore extends VehicleState {
@@ -9,21 +22,29 @@ interface VehicleStore extends VehicleState {
     scenarios: ScenarioNode[];
     isScenarioRunning: boolean;
 
-    // Scenario Management Actions
+    // --------------------------------------------------------------------
+    // Scenario Actions (シナリオの追加・更新・実行状態のトグル)
+    // --------------------------------------------------------------------
     addScenario: (scenario: ScenarioNode) => void;
     updateScenario: (id: string, newNode: ScenarioNode) => void;
     setScenarioRunning: (isRunning: boolean) => void;
 
-
-
-    // Conflict Resolution
+    // --------------------------------------------------------------------
+    // Conflict Resolution (手動介入・コンフリクト解決)
+    // --------------------------------------------------------------------
+    // ユーザーが各種スイッチを手動操作した時刻を記録し、
+    // シナリオ（自動制御）がその操作を上書きしないよう調停するために使用
     lastUserInteract: Record<keyof VehicleState, number>;
     recordUserInteraction: (key: keyof VehicleState) => void;
 
+    // --------------------------------------------------------------------
     // Generic Setter for VSS State
+    // 全てのVSS値の更新は必ずこのメソッドを経由させる。
+    // （ここで各種エッジ検出や、イグニッション状態に連動した初期化プロセスが介入する）
+    // --------------------------------------------------------------------
     setVss: <K extends keyof VehicleState>(key: K, value: VehicleState[K]) => void;
 
-    // Batch Update for Physics/Scenarios
+    // Batch Update for Physics/Scenarios (複数のVSS値を1フレームで一括更新)
     updateState: (newState: Partial<VehicleState>) => void;
 }
 
@@ -54,6 +75,14 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
     "Internal.LaneChangeStartTime": null,
     "Internal.LaneChangeStartRearDistance": null,
     "Internal.ActiveScenarioTrigger": null,
+
+    /* 
+      【シミュレータ独自の内部状態】
+      PreRunStateCache: 自動制御（スマート機能）が介入する直前の状態を保持し、RESTORE時に復元する先。
+      UserMemoryState: ユーザーが手動で設定した（期待する）最新の窓開度などを保持。
+      ManualOverrideFlags: シナリオ実行中にユーザーが手動操作を行ったかをフラグとして記録。
+      WasRainBelow10: 雨天シナリオにおける「エッジ検出（雨が降り始めた瞬間のみ発動）」のフラグ。
+    */
     "Internal.PreRunStateCache": {},
     "Internal.UserMemoryState": {},
     "Internal.ManualOverrideFlags": {},
@@ -206,9 +235,14 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
     updateScenario: (id, newNode) => set((state) => ({
         scenarios: state.scenarios.map(s => ('id' in s && s.id === id) ? newNode : s)
     })),
+    // ------------------------------------------------------------------------
+    // 【シナリオの実行管理 (setScenarioRunning)】
+    //   自動実行（RUN）が開始された瞬間に、現在の車載APIの各種状態を「PreRunStateCache」に保存します。
+    //   これにより、シナリオ終了時（晴れた時など）に、RESTOREアクションで元の状態へ戻すことが可能になります。
+    // ------------------------------------------------------------------------
     setScenarioRunning: (isRunning) => set((state) => {
         if (isRunning && !state.isScenarioRunning) {
-            // Start RUN: Cache initial states and clear manual override flags
+            // 自動制御開始: 現在の各種アクチュエータの状態をスナップショットとしてキャッシュ
             return {
                 isScenarioRunning: true,
                 "Internal.PreRunStateCache": {
@@ -220,10 +254,10 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
                     "Vehicle.Cabin.HVAC.IsFrontDefrosterActive": state["Vehicle.Cabin.HVAC.IsFrontDefrosterActive"],
                     "Vehicle.Cabin.HVAC.IsRearDefrosterActive": state["Vehicle.Cabin.HVAC.IsRearDefrosterActive"],
                 },
-                "Internal.ManualOverrideFlags": {}
+                "Internal.ManualOverrideFlags": {} // オーバーライド（手動介入記録）もリセット
             };
         } else if (!isRunning && state.isScenarioRunning) {
-            // STOP RUN: Clear cache and flags
+            // 自動制御停止: キャッシュや手動介入の記録をクリア
             return {
                 isScenarioRunning: false,
                 "Internal.PreRunStateCache": {},
@@ -242,12 +276,16 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         lastUserInteract: { ...state.lastUserInteract, [key]: Date.now() }
     })),
 
-    // Generic Setter
+    // ------------------------------------------------------------------------
+    // 【Central VSS Updater (setVss)】
+    //   あらゆるシステム内のVSS値の変更（ユーザー入力、シナリオ実行、物理シミュレーション）はここを通る。
+    //   ここで、特定の値が変更されたときに連鎖的に起きる「副作用」をまとめてハンドリングする。
+    // ------------------------------------------------------------------------
     setVss: (key, value) => {
         set((state) => {
             const updates: any = { [key]: value };
 
-            // When Ignition transitions to STOP, force reset actuators
+            // [ 制約処理 ]: イグニッションがSTOPになったら、シナリオやワイパー等の全アクチュエータを強制停止
             if (key === "Vehicle.IgnitionState" && value === 'STOP') {
                 updates["Vehicle.Body.Windshield.Wiper.Mode"] = 'OFF';
                 updates["Vehicle.Cabin.HVAC.IsFrontDefrosterActive"] = false;
@@ -256,21 +294,21 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
                 updates["Vehicle.Body.Lights.DirectionIndicator.Left.IsSignaling"] = false;
                 updates["Vehicle.Body.Lights.DirectionIndicator.Right.IsSignaling"] = false;
                 updates["Vehicle.Body.Lights.Hazard.IsSignaling"] = false;
-                updates["Internal.ActiveScenarioTrigger"] = null;
+                updates["Internal.ActiveScenarioTrigger"] = null; // ハザードシナリオ等の進行状況をリセット
                 updates["Internal.LaneChangeStatus"] = 'NONE';
             }
 
-            // Detect changing RainLevel to construct edge flag
+            // [ エッジ検出 ]: 雨量(RainLevel)の連続的な変化を監視し、「雨が降り始めた瞬間」のみを捉えるためのフラグ管理
             if (key === "Vehicle.Exterior.Air.RainIntensity") {
                 const prevRain = state["Vehicle.Exterior.Air.RainIntensity"] as number;
                 const newRain = value as number;
 
                 if (prevRain < 10 && newRain >= 10) {
-                    updates["Internal.WasRainBelow10"] = true;
+                    updates["Internal.WasRainBelow10"] = true; // 10%未満から10%以上への立ち上がりエッジ
                 } else if (prevRain >= 10 && newRain >= 10) {
-                    updates["Internal.WasRainBelow10"] = false;
+                    updates["Internal.WasRainBelow10"] = false; // 降り続けている状態
                 } else if (newRain < 10) {
-                    updates["Internal.WasRainBelow10"] = true; // reset
+                    updates["Internal.WasRainBelow10"] = true; // クローズ（リセット）。次に降った時に再度エッジ検出可能にする
                 }
             }
 
@@ -287,16 +325,19 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
                 };
             }
 
-            // If an actuator is changed manually while Ignition is START, record the override and memory
+            // [ マニュアル・オーバーライド (手動介入の記録) ]
+            // 自動制御（スマートシーン）が稼働中であっても、「ドライバーの意志（手動操作）が最優先される」という仕様を実現するため、
+            // ユーザーが何かしらのスイッチを操作した際には `ManualOverrideFlags` を true に記録し、自動制御からの要求をブロックする材料とする。
             if (state["Vehicle.IgnitionState"] === 'START' || (key === "Vehicle.IgnitionState" && value === 'START')) {
-                // If it's a direct actuator change (not ignition itself)
+                // イグニッション自体の操作は除く（アクチュエータへの操作のみを記録する）
                 if (key !== "Vehicle.IgnitionState") {
                     updates["Internal.ManualOverrideFlags"] = {
                         ...state["Internal.ManualOverrideFlags"],
                         [key]: true
                     };
 
-                    // Update UserMemoryState if it's one of the tracked actuators
+                    // 同時に、手動操作によりユーザーが期待した最新の状態を UserMemoryState にバックアップ。
+                    // （雨がやんでRESTOREする際に、自動制御が行われた「前」ではなく、手動操作後の「今」の状態へ戻すため）
                     const trackedKeys = [
                         "Vehicle.Cabin.Door.Row1.Left.Window.Position",
                         "Vehicle.Cabin.Door.Row1.Right.Window.Position",

@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useVehicleStore } from '@/lib/store';
 import * as THREE from 'three';
-import { Html, Text } from '@react-three/drei';
+import { Html, Text, RoundedBox } from '@react-three/drei';
 
 type CarModel3DProps = {
     isFrontDefrosterActive?: boolean;
@@ -172,58 +172,76 @@ export function CarModel3D({ isFrontDefrosterActive = false, isRearDefrosterActi
 
     return (
         <group position={[0, 0.2, 0]}>
-            {/* --- Lower Body --- */}
-            <mesh position={[0, bodyH / 2, 0]} castShadow receiveShadow>
-                <boxGeometry args={[bodyW, bodyH, bodyD]} />
-                <meshStandardMaterial color={paintColor} metalness={0.6} roughness={0.3} />
-            </mesh>
+            {/* 
+              -------------------------------------------------------------
+              [ 車体ベース (Lower Body) ]
+              箱型 (boxGeometry) ではなく、RoundedBox を使用することで角を滑らかにし、
+              モダンで柔らかな曲線基調のカーデザインを表現しています。
+              radius=0.15 により、バンパー周りにより強い丸みを持たせています。
+              -------------------------------------------------------------
+            */}
+            <RoundedBox position={[0, bodyH / 2, 0]} args={[bodyW, bodyH, bodyD]} radius={0.15} smoothness={4} castShadow receiveShadow>
+                {/* 
+                  [ 塗装の質感 (meshPhysicalMaterial) ]
+                  ただの塗料ではなく「車のクリア塗装」を再現するため、以下のパラメータを設定しています。
+                  - metalness (0.7) / roughness (0.15) : ベースとなる金属＋塗装の反射と滑らかさ
+                  - clearcoat (1.0) / clearcoatRoughness (0.1) : 表面の透明な艶と、ハイライトの鋭さ
+                */}
+                <meshPhysicalMaterial color={paintColor} metalness={0.7} roughness={0.15} clearcoat={1.0} clearcoatRoughness={0.1} />
+            </RoundedBox>
 
-            <mesh position={[0, bodyH / 2 + 0.1, zBaseF + (zBumperF - zBaseF) / 2]} rotation={[0.08, 0, 0]} castShadow receiveShadow>
-                <boxGeometry args={[bodyW - 0.05, 0.5, zBumperF - zBaseF]} />
-                <meshStandardMaterial color={paintColor} metalness={0.6} roughness={0.3} />
-            </mesh>
+            {/* [ フロントバンパー下部 ] 段差をつけて立体感を出す */}
+            <RoundedBox position={[0, bodyH / 2 + 0.1, zBaseF + (zBumperF - zBaseF) / 2]} rotation={[0.08, 0, 0]} args={[bodyW - 0.05, 0.5, zBumperF - zBaseF]} radius={0.1} smoothness={4} castShadow receiveShadow>
+                <meshPhysicalMaterial color={paintColor} metalness={0.7} roughness={0.15} clearcoat={1.0} clearcoatRoughness={0.1} />
+            </RoundedBox>
 
-            <mesh position={[0, bodyH / 2 + 0.1, zBumperR + Math.abs(zBaseR - zBumperR) / 2]} rotation={[-0.05, 0, 0]} castShadow receiveShadow>
-                <boxGeometry args={[bodyW - 0.05, 0.5, Math.abs(zBaseR - zBumperR)]} />
-                <meshStandardMaterial color={paintColor} metalness={0.6} roughness={0.3} />
-            </mesh>
+            {/* [ リアバンパー下部 ] */}
+            <RoundedBox position={[0, bodyH / 2 + 0.1, zBumperR + Math.abs(zBaseR - zBumperR) / 2]} rotation={[-0.05, 0, 0]} args={[bodyW - 0.05, 0.5, Math.abs(zBaseR - zBumperR)]} radius={0.1} smoothness={4} castShadow receiveShadow>
+                <meshPhysicalMaterial color={paintColor} metalness={0.7} roughness={0.15} clearcoat={1.0} clearcoatRoughness={0.1} />
+            </RoundedBox>
 
-            {/* --- Roof & Pillars --- */}
-            <mesh position={[0, roofY, (zRoofF + zRoofR) / 2]} castShadow receiveShadow>
-                <boxGeometry args={[bodyW - 0.2, 0.05, Math.abs(zRoofF - zRoofR)]} />
-                <meshStandardMaterial color={paintColor} metalness={0.6} roughness={0.3} />
-            </mesh>
+            {/* 
+              -------------------------------------------------------------
+              [ Roof & Pillars (ルーフと各ピラー) ]
+              細いパーツのため、控えめなカーブ (radius: 0.02) でエッジの鋭さだけを和らげています。
+              -------------------------------------------------------------
+            */}
+            <RoundedBox position={[0, roofY, (zRoofF + zRoofR) / 2]} args={[bodyW - 0.2, 0.05, Math.abs(zRoofF - zRoofR)]} radius={0.02} smoothness={2} castShadow receiveShadow>
+                <meshPhysicalMaterial color={paintColor} metalness={0.7} roughness={0.15} clearcoat={1.0} clearcoatRoughness={0.1} />
+            </RoundedBox>
 
             {/* A Pillars */}
             {[1, -1].map((sign, idx) => (
-                <mesh key={`a-pillar-${idx}`} position={[sign * (bodyW / 2 - 0.15), bodyH + frontGlassDY / 2, zRoofF + frontGlassDX / 2]} rotation={[-frontGlassAngle, 0, 0]} castShadow>
-                    <boxGeometry args={[0.1, frontGlassLength, 0.1]} />
-                    <meshStandardMaterial color={paintColor} metalness={0.6} roughness={0.3} />
-                </mesh>
+                <RoundedBox key={`a-pillar-${idx}`} position={[sign * (bodyW / 2 - 0.15), bodyH + frontGlassDY / 2, zRoofF + frontGlassDX / 2]} rotation={[-frontGlassAngle, 0, 0]} args={[0.1, frontGlassLength, 0.1]} radius={0.02} smoothness={2} castShadow>
+                    <meshPhysicalMaterial color={paintColor} metalness={0.7} roughness={0.15} clearcoat={1.0} clearcoatRoughness={0.1} />
+                </RoundedBox>
             ))}
 
             {/* C Pillars (Aピラーと同じ太さ 0.1 に修正) */}
             {[1, -1].map((sign, idx) => (
-                <mesh key={`c-pillar-real-${idx}`} position={[sign * (bodyW / 2 - 0.15), bodyH + rearGlassDY / 2, zBaseR + rearGlassDX / 2]} rotation={[rearGlassAngle, 0, 0]} castShadow>
-                    <boxGeometry args={[0.1, rearGlassLength, 0.1]} />
-                    <meshStandardMaterial color={paintColor} metalness={0.6} roughness={0.3} />
-                </mesh>
+                <RoundedBox key={`c-pillar-real-${idx}`} position={[sign * (bodyW / 2 - 0.15), bodyH + rearGlassDY / 2, zBaseR + rearGlassDX / 2]} rotation={[rearGlassAngle, 0, 0]} args={[0.1, rearGlassLength, 0.1]} radius={0.02} smoothness={2} castShadow>
+                    <meshPhysicalMaterial color={paintColor} metalness={0.7} roughness={0.15} clearcoat={1.0} clearcoatRoughness={0.1} />
+                </RoundedBox>
             ))}
 
             {/* B Pillars */}
             {[1, -1].map((sign, idx) => (
-                <mesh key={`b-pillar-mid-${idx}`} position={[sign * (bodyW / 2 - 0.15), bodyH + rearGlassDY / 2, (zRoofF + zRoofR) / 2]} castShadow>
-                    <boxGeometry args={[0.1, rearGlassDY, 0.2]} />
-                    <meshStandardMaterial color={paintColor} metalness={0.6} roughness={0.3} />
-                </mesh>
+                <RoundedBox key={`b-pillar-mid-${idx}`} position={[sign * (bodyW / 2 - 0.15), bodyH + rearGlassDY / 2, (zRoofF + zRoofR) / 2]} args={[0.1, rearGlassDY, 0.2]} radius={0.02} smoothness={2} castShadow>
+                    <meshPhysicalMaterial color={paintColor} metalness={0.7} roughness={0.15} clearcoat={1.0} clearcoatRoughness={0.1} />
+                </RoundedBox>
             ))}
 
-            {/* --- Front Windshield --- */}
+            {/* 
+              -------------------------------------------------------------
+              [ Front Windshield (フロントガラス) ]
+              ガラス特有の透明度 (transmission) と屈折率 (ior=1.5) を物理ベースで設定しています。
+              エッジをわずかに丸め (radius: 0.01) 、ボディとの一体感を高めています。
+              -------------------------------------------------------------
+            */}
             <group position={[0, bodyH + frontGlassDY / 2, zRoofF + frontGlassDX / 2]} rotation={[-frontGlassAngle, 0, 0]}>
-                <mesh>
-                    <boxGeometry args={[bodyW - 0.3, frontGlassLength, 0.03]} />
+                <RoundedBox args={[bodyW - 0.3, frontGlassLength, 0.03]} radius={0.01} smoothness={2}>
                     <meshPhysicalMaterial color="#aaccff" transmission={0.95} opacity={1} transparent roughness={0} clearcoat={1.0} clearcoatRoughness={0} ior={1.5} thickness={0.03} />
-                </mesh>
+                </RoundedBox>
 
                 {isFrontDefrosterActive && (
                     <group position={[0, 0, 0]}>
@@ -247,12 +265,16 @@ export function CarModel3D({ isFrontDefrosterActive = false, isRearDefrosterActi
                 )}
             </group>
 
-            {/* --- Rear Window --- */}
+            {/* 
+              -------------------------------------------------------------
+              [ Rear Window (リアガラス) ]
+              フロント同様の物理マテリアルに加え、内部にデフォッガ（熱線）のギミックを含みます。
+              -------------------------------------------------------------
+            */}
             <group position={[0, bodyH + rearGlassDY / 2, zBaseR + rearGlassDX / 2]} rotation={[rearGlassAngle, 0, 0]}>
-                <mesh>
-                    <boxGeometry args={[bodyW - 0.3, rearGlassLength, 0.03]} />
+                <RoundedBox args={[bodyW - 0.3, rearGlassLength, 0.03]} radius={0.01} smoothness={2}>
                     <meshPhysicalMaterial color="#aaccff" transmission={0.95} opacity={1} transparent roughness={0} clearcoat={1.0} clearcoatRoughness={0} ior={1.5} thickness={0.03} />
-                </mesh>
+                </RoundedBox>
 
                 <group position={[0, 0, -0.02]}>
                     {/* リアガラス熱線（5本線）の表現: 非作動時は黒色、作動時は赤色で強く光る */}
@@ -297,36 +319,46 @@ export function CarModel3D({ isFrontDefrosterActive = false, isRearDefrosterActi
                 })}
             </group>
 
-            {/* --- Wipers --- */}
-            {/* クルマの右側(X=-0.45)に右ワイパー(RightArmRef)、中央(X=0.0)に左ワイパー(LeftArmRef)を配置 */}
+            {/* 
+              -------------------------------------------------------------
+              [ Wipers (ワイパー) ]
+              クルマの右側(X=-0.45)に右ワイパー(RightArmRef)、中央(X=0.0)に左ワイパー(LeftArmRef)を配置。
+              完全に真っ黒な色から、わずかに反射(roughness:0.7, metalness:0.2)を持たせることで
+              プラスチック/樹脂パーツらしいリアルな質感を持たせています。
+              -------------------------------------------------------------
+            */}
             <group position={[0, bodyH + 0.02, zBaseF + 0.05]} rotation={[-frontGlassAngle, 0, 0]}>
                 <group position={[0.0, 0, 0]}>
                     <mesh rotation={[Math.PI / 2, 0, 0]}>
                         <cylinderGeometry args={[0.02, 0.02, 0.08]} />
-                        <meshStandardMaterial color="#222" />
+                        <meshStandardMaterial color="#1a1a1a" roughness={0.7} metalness={0.2} />
                     </mesh>
                     <group ref={wiperLeftArmRef} position={[0, 0, 0]}>
                         <mesh position={[0, 0.38, 0]}>
                             <boxGeometry args={[0.025, 0.76, 0.015]} />
-                            <meshStandardMaterial color="#1a202c" />
+                            <meshStandardMaterial color="#151515" roughness={0.7} metalness={0.2} />
                         </mesh>
                     </group>
                 </group>
                 <group position={[-0.45, 0, 0]}>
                     <mesh rotation={[Math.PI / 2, 0, 0]}>
                         <cylinderGeometry args={[0.02, 0.02, 0.08]} />
-                        <meshStandardMaterial color="#222" />
+                        <meshStandardMaterial color="#1a1a1a" roughness={0.7} metalness={0.2} />
                     </mesh>
                     <group ref={wiperRightArmRef} position={[0, 0, 0]}>
                         <mesh position={[0, 0.42, 0]}>
                             <boxGeometry args={[0.025, 0.84, 0.015]} />
-                            <meshStandardMaterial color="#1a202c" />
+                            <meshStandardMaterial color="#151515" roughness={0.7} metalness={0.2} />
                         </mesh>
                     </group>
                 </group>
             </group>
 
-            {/* --- Wheels & Lights & Grille --- */}
+            {/* 
+              -------------------------------------------------------------
+              [ Wheels & Tires (タイヤとホイール) ]
+              -------------------------------------------------------------
+            */}
             {[
                 [bodyW / 2, -0.1, bodyD / 2 - 0.8],
                 [-bodyW / 2, -0.1, bodyD / 2 - 0.8],
@@ -334,12 +366,16 @@ export function CarModel3D({ isFrontDefrosterActive = false, isRearDefrosterActi
                 [-bodyW / 2, -0.1, -bodyD / 2 + 0.8],
             ].map((pos, idx) => (
                 <group key={idx} position={pos as [number, number, number]} rotation={[0, 0, pos[0] > 0 ? -Math.PI / 2 : Math.PI / 2]}>
-                    {/* タイヤのゴム部分 */}
+                    {/* 
+                      [ タイヤのゴム部分 ]
+                      color="#151515" により、漆黒ではなく実際のカーボンブラックに近い色を表現。
+                      roughness=0.8, metalness=0.1 により、ゴム特有の鈍い光の反射を持たせています。
+                    */}
                     <mesh castShadow>
                         <cylinderGeometry args={[0.45, 0.45, 0.35, 32]} />
-                        <meshStandardMaterial color="#111111" roughness={0.9} />
+                        <meshStandardMaterial color="#151515" roughness={0.8} metalness={0.1} />
                     </mesh>
-                    {/* ホイールのベース(リム) */}
+                    {/* [ ホイールベース (リム) ] 金属質な反射を設定 */}
                     <mesh position={[0, 0.18, 0]}>
                         <cylinderGeometry args={[0.3, 0.3, 0.02, 32]} />
                         <meshStandardMaterial color="#d0d0d0" metalness={1.0} roughness={0.15} />
@@ -359,14 +395,25 @@ export function CarModel3D({ isFrontDefrosterActive = false, isRearDefrosterActi
                 </group>
             ))}
 
-            {/* 0. フロントグリル & ロゴ */}
+            {/* 
+              -------------------------------------------------------------
+              [ Front Grille (フロントグリル) & ロゴ ]
+              ワイパー同様、樹脂らしい微かに艶のある黒色（#151515）に設定しています。
+              -------------------------------------------------------------
+            */}
             <mesh position={[0, bodyH / 2 + 0.2, bodyD / 2 + 0.01]}>
                 <boxGeometry args={[0.8, 0.25, 0.03]} />
-                <meshStandardMaterial color="#111111" roughness={0.8} />
+                <meshStandardMaterial color="#151515" roughness={0.7} metalness={0.2} />
             </mesh>
             <Text position={[0, bodyH / 2 + 0.2, bodyD / 2 + 0.03]} fontSize={0.15} color="#ffffff" anchorX="center" anchorY="middle">NCES</Text>
 
-            {/* 1. ヘッドライト */}
+            {/* 
+              -------------------------------------------------------------
+              [ Headlights (ヘッドライト) ]
+              storeのrainLevel(雨量)が50以上のとき(`isLightsOn`)、
+              emissive(自己発光)が有効になり、自動で点灯するスマート機能と連動しています。
+              -------------------------------------------------------------
+            */}
             <mesh position={[bodyW / 2 - 0.35, bodyH / 2 + 0.2, bodyD / 2 - 0.01]}>
                 <boxGeometry args={[0.4, 0.25, 0.05]} />
                 <meshStandardMaterial color={isLightsOn ? "#ffffff" : "#444455"} emissive="#ffffff" emissiveIntensity={isLightsOn ? 1.5 : 0} />
@@ -416,7 +463,13 @@ export function CarModel3D({ isFrontDefrosterActive = false, isRearDefrosterActi
                 <meshStandardMaterial ref={sideRightLight} color="#554433" emissive="#ff6600" emissiveIntensity={0} />
             </mesh>
 
-            {/* --- HTML Labels (Hazard / Turn) --- */}
+            {/* 
+              -------------------------------------------------------------
+              [ HTML Labels (UIオーバレイ表示) ]
+              3D空間上にReactコンポーネント(HTML)をマッピングする機能(@react-three/drei の Html)を使用。
+              サンキューハザード時やレーンチェンジ時にポップアップを表示します。
+              -------------------------------------------------------------
+            */}
             {hazard && (
                 <Html position={[0, roofY + 0.8, 0]} center zIndexRange={[100, 0]}>
                     <div className="text-pink-400 font-bold text-lg tracking-widest uppercase animate-bounce drop-shadow-[0_0_10px_pink] text-center bg-white/90 backdrop-blur px-4 py-1 rounded-full shadow-xl whitespace-nowrap">
