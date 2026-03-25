@@ -1,3 +1,11 @@
+/**
+ * =============================================================================
+ * 【ファイルヘッダ: CarModel3D.tsx】
+ * @file CarModel3D.tsx
+ * @description 3D空間（WebGL / react-three-fiber）上に描画される車両モデルコンポーネント。
+ * Zustandストアから各種車両状態を購読し、ワイパーの動作、ライトの点灯・点滅、窓の開閉などをリアルタイムな物理アニメーションとして可視化します。
+ * =============================================================================
+ */
 import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useVehicleStore } from '@/lib/store';
@@ -9,6 +17,13 @@ type CarModel3DProps = {
     isRearDefrosterActive?: boolean;
 };
 
+/**
+ * @component CarModel3D
+ * @description SUV形状の3D車両モデルを構築し、内部状態の変化に連動してアニメーション描画を行うメインコンポーネント。
+ * ライトやウインカーの点滅、ワイパーの払拭動作、窓ガラスの昇降などを`useFrame`フックを用いてフレームごとに計算・反映します。
+ * @param {boolean} isFrontDefrosterActive - フロントデフロスタの作動状態。true時に熱風アニメーションを描画。
+ * @param {boolean} isRearDefrosterActive - リアデフォッガの作動状態。true時に熱線（赤色発光）アニメーションを描画。
+ */
 export function CarModel3D({ isFrontDefrosterActive = false, isRearDefrosterActive = false }: CarModel3DProps) {
     // -------------------------------------------------------------
     // 【Store (状態管理) からのデータ取得】

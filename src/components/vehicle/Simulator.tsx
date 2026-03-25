@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * =============================================================================
+ * 【ファイルヘッダ: Simulator.tsx】
+ * @file Simulator.tsx
+ * @description アプリケーションの全体レイアウトを統括し、物理ループ（Physics Loop）に基づく各種シミュレーションを実行するメインコンポーネント。
+ * ダッシュボード、車両3Dモデル、制御パネルを統合し、時間軸に沿ったステータス更新を担います。
+ * =============================================================================
+ */
 import { useEffect, useRef, useCallback } from "react";
 import { useVehicleStore } from "@/lib/store";
 import { Dashboard } from "./Dashboard";
@@ -7,6 +15,12 @@ import { ExternalView } from "./ExternalView";
 import { ControlPanel } from "./ControlPanel";
 
 // Audio Hook (Internal)
+/**
+ * @function useClickSound
+ * @description ウインカー動作音（Tick音）をWeb Audio APIを使用して生成・再生するカスタムフック。
+ * iOS等のブラウザ制限を回避するため、初回操作時にAudioContextをアクティブ（レジューム）にし、動的にオシレーターを生成・破棄します。
+ * @returns {() => void} - クリック音を再生する関数。
+ */
 const useClickSound = () => {
     const audioContextRef = useRef<AudioContext | null>(null);
 
@@ -47,6 +61,11 @@ const useClickSound = () => {
     return playClick;
 };
 
+/**
+ * @component Simulator
+ * @description 車両シミュレータのUI全体をラップするメインコンポーネント。
+ * `useEffect` 内で100ms周期のメイン物理ループ（Physics Loop）を稼働させ、窓開閉のアニメーションや、ウインカーの音の同期、点滅フラグのリレーション等を管理・処理します。
+ */
 export const Simulator = () => {
     const playClick = useClickSound();
     const wasSignalingRef = useRef(false);

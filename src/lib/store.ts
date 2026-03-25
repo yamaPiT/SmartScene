@@ -228,18 +228,34 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
     lastUserInteract: {} as Record<keyof VehicleState, number>,
 
     // Scenario Actions
+    /**
+     * @function addScenario
+     * @description 新しいシナリオノードをストアのシナリオリストに追加します。
+     * 同一IDのシナリオが既に存在する場合は追加をスキップします。
+     * @param {ScenarioNode} scenario - 追加するシナリオノードオブジェクト。
+     */
     addScenario: (scenario) => set((state) => {
         if (state.scenarios.some(s => 'id' in s && s.id === scenario['id'])) return state;
         return { scenarios: [...state.scenarios, scenario] };
     }),
+    /**
+     * @function updateScenario
+     * @description 既存のシナリオノードを新しい内容で更新（置換）します。
+     * IDが一致するシナリオを検索し、一致したものをnewNodeに置き換えます。
+     * @param {string} id - 更新対象のシナリオID。
+     * @param {ScenarioNode} newNode - 更新後の新しいシナリオノード。
+     */
     updateScenario: (id, newNode) => set((state) => ({
         scenarios: state.scenarios.map(s => ('id' in s && s.id === id) ? newNode : s)
     })),
     // ------------------------------------------------------------------------
-    // 【シナリオの実行管理 (setScenarioRunning)】
-    //   自動実行（RUN）が開始された瞬間に、現在の車載APIの各種状態を「PreRunStateCache」に保存します。
-    //   これにより、シナリオ終了時（晴れた時など）に、RESTOREアクションで元の状態へ戻すことが可能になります。
-    // ------------------------------------------------------------------------
+    /**
+     * @function setScenarioRunning
+     * @description シナリオの自動実行状態（RUN / STOP）を切り替えます。
+     * 実行開始時（RUN）には、現在の車載APIの各種状態（窓、ワイパー、デフロスタ等）を「PreRunStateCache」に保存し、バックアップを取得します。
+     * これにより、シナリオ終了時（例：雨が止んだ時）に「RESTORE」アクションを通じて確実に元の状態へ復元することが可能になります。
+     * @param {boolean} isRunning - trueでシナリオ実行開始、falseで停止。
+     */
     setScenarioRunning: (isRunning) => set((state) => {
         if (isRunning && !state.isScenarioRunning) {
             // 自動制御開始: 現在の各種アクチュエータの状態をスナップショットとしてキャッシュ
@@ -266,21 +282,40 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         }
         return { isScenarioRunning: isRunning };
     }),
+    /**
+     * @function resetScenarios
+     * @description ストアに保持されている全シナリオリストを、指定された新しいリストで上書きリセットします。
+     * 初期化や外部JSONからのロード時等に使用されます。
+     * @param {ScenarioNode[]} newScenarios - リセット後に設定する新しいシナリオノードの配列。
+     */
     resetScenarios: (newScenarios: ScenarioNode[]) => set({ scenarios: newScenarios }),
 
 
 
 
     // Conflict Resolution
+    /**
+     * @function recordUserInteraction
+     * @description ユーザーによる手動のUI操作（スイッチ切り替え等）の発生時刻を記録します。
+     * この記録は、シナリオによる自動制御命令とユーザー手動操作が競合した際に、手動操作を優先（オーバーライド）させるための調停（Conflict Resolution）に使用されます。
+     * @param {keyof VehicleState} key - 操作対象となったVSSパラメータキー。
+     */
     recordUserInteraction: (key) => set((state) => ({
         lastUserInteract: { ...state.lastUserInteract, [key]: Date.now() }
     })),
 
     // ------------------------------------------------------------------------
-    // 【Central VSS Updater (setVss)】
-    //   あらゆるシステム内のVSS値の変更（ユーザー入力、シナリオ実行、物理シミュレーション）はここを通る。
-    //   ここで、特定の値が変更されたときに連鎖的に起きる「副作用」をまとめてハンドリングする。
-    // ------------------------------------------------------------------------
+    /**
+     * @function setVss
+     * @description システム内のあらゆるVSS（Vehicle Signal Specification）値の更新を行う中央処理関数。
+     * ユーザーによるマニュアル入力、シナリオ実行、物理シミュレーションによる状態更新のすべてがここを通過します。
+     * 
+     * 特定の値が変更された際、イグニッション状態による全体リセット、センサーデータの立ち上がりエッジ検出、
+     * およびドライバーの手動介入（オーバーライド）フラグの記録といった「副作用」を一元的にハンドリング・調停します。
+     * 
+     * @param {K} key - 更新対象のVSSパラメータキー（例：'Vehicle.Speed'）。
+     * @param {VehicleState[K]} value - 更新する新しい値。
+     */
     setVss: (key, value) => {
         set((state) => {
             const updates: any = { [key]: value };
@@ -363,6 +398,12 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
     },
 
     // Batch Update
+    /**
+     * @function updateState
+     * @description 複数のVSS状態を1回のフレーム（サイクル）で一括更新します。
+     * 物理エンジンによるスムーズなアニメーション描画や、シナリオの複雑なアクション（複数同時操作）を遅延なく反映するために使用します。
+     * @param {Partial<VehicleState>} newState - 一括更新する状態のキーと値のペア。
+     */
     updateState: (newState) => set((state) => {
         const updates = { ...newState } as any;
         return { ...state, ...updates };

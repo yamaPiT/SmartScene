@@ -1,5 +1,13 @@
 "use client";
 
+/**
+ * =============================================================================
+ * 【ファイルヘッダ: ControlPanel.tsx】
+ * @file ControlPanel.tsx
+ * @description 車両の各種状態（イグニッション、窓、ライト、空調、ワイパー等）を手動で操作するための制御パネルコンポーネント。
+ * ダッシュボードUIとしてユーザーと内部状態（Store）を繋ぎます。
+ * =============================================================================
+ */
 import { useVehicleStore } from "@/lib/store";
 import {
     CloudRain,
@@ -16,6 +24,11 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 
+/**
+ * @component ControlPanel
+ * @description ユーザー操作を受け付けて、Zustandストア（VehicleStore）の各種VSS状態を更新するUIコンポーネント。
+ * 各種ボタン、レンジスライダーを含み、イグニッションON/OFFに応じた活性/非活性の制御も担います。
+ */
 export const ControlPanel = () => {
     // -------------------------------------------------------------
     // 【Store (状態管理) からのデータ取得】
@@ -56,7 +69,13 @@ export const ControlPanel = () => {
     // 物理的なアナログ操作をUIレベルでシミュレートするための複雑な制御を行っています。
     // -------------------------------------------------------------
 
-    // 窓の開閉ボタンが「押された（Press）」瞬間の処理
+    /**
+     * @function handleWindowPress
+     * @description 窓の開閉ボタンが「押された（Press）」瞬間の処理。
+     * マニュアルオーバーライド（手動介入フラグ）を立てて、動作対象の窓がOPEN/CLOSEのどちらに向かって動くかをTargetとしてストアに設定します。
+     * @param {string} target - 操作対象の窓（'FL', 'FR', 'RL', 'RR', 'ALL'）。
+     * @param {'OPEN' | 'CLOSE'} action - 開けるか閉めるかの動作指定。
+     */
     const handleWindowPress = (target: string, action: 'OPEN' | 'CLOSE') => {
         const state = useVehicleStore.getState();
         const updates: any = {};
@@ -85,7 +104,13 @@ export const ControlPanel = () => {
         state.updateState(updates);
     };
 
-    // 窓の開閉ボタンから「指が離れた（Release）」瞬間の処理
+    /**
+     * @function handleWindowRelease
+     * @description 窓の開閉ボタンから「指が離れた（Release）」瞬間の処理。
+     * 動作中の現在の窓の位置（currentPos）をそのまま新たな目標位置として上書きし、動きを即座に停止させます。
+     * 同時に、その停止位置を「ユーザーが意図した記憶状態（UserMemoryState）」としてバックアップします。
+     * @param {string} target - 操作対象であった窓の識別子。
+     */
     const handleWindowRelease = (target: string) => {
         const state = useVehicleStore.getState();
         const updates: any = {};
@@ -122,7 +147,12 @@ export const ControlPanel = () => {
         state.updateState(updates);
     };
 
-    // 「一括開閉ボタン（ALL OPEN / ALL CLOSE）」がクリックされた時の処理
+    /**
+     * @function handleWindowAllClick
+     * @description 「一括開閉ボタン（ALL OPEN / ALL CLOSE）」がクリックされた時の処理。
+     * すべての窓を一斉に目標位置（100% または 0%）へ移動するようTargetを設定します。
+     * @param {'OPEN' | 'CLOSE'} action - 全て開けるか閉めるかの動作指定。
+     */
     const handleWindowAllClick = (action: 'OPEN' | 'CLOSE') => {
         const state = useVehicleStore.getState();
         const updates: any = {};
@@ -156,7 +186,13 @@ export const ControlPanel = () => {
         state.updateState(updates);
     };
 
-    // ウインカー（方向指示器）ボタン操作時の処理です。
+    /**
+     * @function handleTurnSignal
+     * @description ウインカー（方向指示器）ボタン操作時の処理。
+     * レバー操作をシミュレートし、左右ウインカーのトグル点灯および排他制御を行います。
+     * シナリオ自動実行中においては、サンキューハザード用の「車線変更開始トリガー」としても機能します。
+     * @param {'LEFT' | 'RIGHT'} direction - 操作されたウインカーの方向。
+     */
     const handleTurnSignal = (direction: 'LEFT' | 'RIGHT') => {
         const state = useVehicleStore.getState();
         const isLeft = direction === 'LEFT';
