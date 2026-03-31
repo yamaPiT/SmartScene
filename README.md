@@ -40,36 +40,37 @@ https://github.com/yamaPiT/AntigravityTemplate
 ```mermaid
 graph TD
     Start(["開始"]) --> UserReq["人間からの要求アイデア"]
-    UserReq --> Req["要求定義工程<br>(Requirements Engineer)"]
-    Req --- ReqDoc[("SW105_ソフトウェア要求仕様書")]
-    Req --> ReqRev["自己レビュー<br>(Self-Correction)"]
+    UserReq --> Req["要求定義工程 - Requirements Engineer"]
+    Req --- ReqDoc[("SW105 ソフトウェア要求仕様書")]
+    Req --> ReqRev["自己レビュー - Self-Correction"]
     ReqRev -- 修正・洗練 --> Req
-    ReqRev --> ReqHum["【人間による確認・承認】"]
+    ReqRev --> ReqHum["人間による確認・承認"]
     ReqHum -- 差し戻し --> Req
-    ReqHum -- 承認 --> Arch["アーキテクチャ設計工程<br>(Architect)"]
+    ReqHum -- 承認 --> Arch["アーキテクチャ設計工程 - Architect"]
 
-    Arch --- ArchDoc[("SW205_ソフトウェアアーキテクチャ設計書")]
-    Arch --> ArchRev["自己レビュー<br>(Self-Correction)"]
+    Arch --- ArchDoc[("SW205 アーキテクチャ設計書")]
+    Arch --> ArchRev["自己レビュー - Self-Correction"]
     ArchRev -- 修正・洗練 --> Arch
-    ArchRev --> ArchHum["【人間による確認・承認】<br>※大幅変更時のみ"]
+    ArchRev --> ArchHum["人間による確認・承認 - 大幅変更時のみ"]
     ArchHum -- 差し戻し --> Arch
-    ArchHum -- 承認 --> Impl["自律的実装・詳細テスト<br>(Programmer / Test Engineer)"]
+    ArchHum -- 承認 --> Impl["自律的実装・詳細テスト - Programmer / Test Engineer"]
 
-    Impl -.- ProgDoc[("プログラムコード<br>単体・結合テスト群<br>※人間の目からは隠蔽")]
-    Impl --> ImplLoop["エラー自己修復ループ<br>(自動デバッグ)"]
+    Impl -.- ProgDoc[("プログラムコード / 単体・結合テスト群 - 人間からは隠蔽")]
+    Impl --> ImplLoop["エラー自己修復ループ - 自動デバッグ"]
     ImplLoop -- 自律修正 --> Impl
     Impl -- 要求変更が必要な場合 --> Req
     Impl -- 設計変更が必要な場合 --> Arch
-    ImplLoop -- オールグリーン --> Test["総合テスト仕様・報告書作成<br>(Test Engineer)"]
+    ImplLoop -- オールグリーン --> Test["総合テスト仕様・報告書作成 - Test Engineer"]
 
-    Test --- TestDoc[("SWP6_ソフトウェア総合テスト仕様書・報告書")]
-    Test --> TestRev["自己レビュー<br>(トレーサビリティ確認)"]
+    Test --- TestDoc[("SWP6 ソフトウェア総合テスト仕様書・報告書")]
+    Test --> TestRev["自己レビュー - トレーサビリティ確認"]
     TestRev -- 修正・洗練 --> Test
 
-    TestRev --> Approve["【人間による最終評価】<br>(要求とテスト結果の突合)"]
+    TestRev --> Approve["人間による最終評価 - 要求とテスト結果の突合"]
     Approve -- フィードバック・追加要求 --> Req
     Approve -- 完了 --> End(["終了"])
 
+    %% スタイル定義
     classDef human fill:#333333,stroke:#ff0000,stroke-width:4px,color:#ffffff;
     classDef agent fill:#333333,stroke:#FFFFFF,stroke-width:1px,color:#ffffff;
     classDef doc fill:#333333,stroke:#2e7d32,stroke-width:2px,color:#ffffff;
