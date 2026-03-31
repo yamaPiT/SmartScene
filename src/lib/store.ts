@@ -7,11 +7,11 @@ import { ScenarioNode } from './scenarioTypes';
   【グローバル状態管理 (Store)】
   このファイルは、本教育用シミュレータの中枢となる状態管理（Zustand）を定義しています。
   
-  ■ 主な役割:
-  1. OSDVI / VSS (Vehicle Signal Specification) に準拠した車載API状態の保持
-  2. シナリオエンジン（ScenarioRunner）が監視・実行するためのシナリオツリー(JSON)の保持
-  3. 「手動操作」と「自動制御（スマート機能）」が衝突した際の『優先権（オーバーライド）』や、
-     自動制御から復帰する際の『状態キャッシュ（PreRunStateCache）』の管理
+  ■ 主な役割・要求仕様（SW105）とのマッピング:
+  1. OSDVI / VSS に準拠した車載API状態の管理 ([REQ-002] アクチュエータ制御)
+  2. シナリオツリーの保持と実行管理 ([REQ-004] 雨天シナリオ、[REQ-005] サンキューハザード)
+  3. 自動制御と手動操作の衝突時の優先権（マニュアルオーバーライド）([REQ-006])
+  4. イグニッション管理と制御初期化・復旧キャッシュ管理（PreRunStateCache）([REQ-001])
   =============================================================================
 */
 
@@ -96,7 +96,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
     scenarios: [
         {
             id: 'scenario-rain',
-            description: '雨天時のスマートシーンシナリオ',
+            description: '[REQ-004] 雨天時のスマートシーンシナリオ (雨量連動制御とRESTORE)',
             type: 'BLOCK',
             children: [
                 {
@@ -178,7 +178,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         },
         {
             id: 'scenario-hazard',
-            description: 'サンキューハザードシナリオ',
+            description: '[REQ-005] サンキューハザードシナリオ (後方障害物距離連動とWAITアクション)',
             type: 'BLOCK',
             children: [
                 {
@@ -320,7 +320,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         set((state) => {
             const updates: any = { [key]: value };
 
-            // [ 制約処理 ]: イグニッションがSTOPになったら、シナリオやワイパー等の全アクチュエータを強制停止
+            // [REQ-001] [ 制約処理 ]: イグニッションがSTOPになったら、シナリオやワイパー等の全アクチュエータを強制停止
             if (key === "Vehicle.IgnitionState" && value === 'STOP') {
                 updates["Vehicle.Body.Windshield.Wiper.Mode"] = 'OFF';
                 updates["Vehicle.Cabin.HVAC.IsFrontDefrosterActive"] = false;
@@ -333,7 +333,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
                 updates["Internal.LaneChangeStatus"] = 'NONE';
             }
 
-            // [ エッジ検出 ]: 雨量(RainLevel)の連続的な変化を監視し、「雨が降り始めた瞬間」のみを捉えるためのフラグ管理
+            // [REQ-004] [ エッジ検出 ]: 雨量(RainLevel)の連続的な変化を監視し、「雨が降り始めた瞬間」のみを捉えるためのフラグ管理
             if (key === "Vehicle.Exterior.Air.RainIntensity") {
                 const prevRain = state["Vehicle.Exterior.Air.RainIntensity"] as number;
                 const newRain = value as number;
@@ -360,8 +360,9 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
                 };
             }
 
-            // [ マニュアル・オーバーライド (手動介入の記録) ]
-            // 自動制御（スマートシーン）が稼働中であっても、「ドライバーの意志（手動操作）が最優先される」という仕様を実現するため、
+            // [REQ-006] [ マニュアル・オーバーライド (手動介入の記録) ]
+            // 「ドライバー・イン・ザ・ループの原則」に基づき、スマートシナリオにより自動制御（スマートシーン）が稼働中であっても、
+            // 「ドライバーの意志（手動操作）が最優先される」という仕様を実現するため、
             // ユーザーが何かしらのスイッチを操作した際には `ManualOverrideFlags` を true に記録し、自動制御からの要求をブロックする材料とする。
             if (state["Vehicle.IgnitionState"] === 'START' || (key === "Vehicle.IgnitionState" && value === 'START')) {
                 // イグニッション自体の操作は除く（アクチュエータへの操作のみを記録する）

@@ -8,7 +8,7 @@ describe('useVehicleStore', () => {
         useVehicleStore.setState(useVehicleStore.getInitialState());
     });
 
-    describe('1. Initial State (初期状態)', () => {
+    describe('1. Initial State (初期状態) [TC-001関連]', () => {
         it('IgnitionStateの初期値は STOP であること', () => {
             const state = useVehicleStore.getState();
             expect(state["Vehicle.IgnitionState"]).toBe('STOP');
@@ -83,12 +83,12 @@ describe('useVehicleStore', () => {
 
     describe('3. setVss: State Update Logic (依存ロジック)', () => {
 
-        it('一般的な値の更新ができること', () => {
+        it('[TC-002-A] 一般的な値の更新ができること', () => {
             useVehicleStore.getState().setVss('Vehicle.Speed', 60);
             expect(useVehicleStore.getState()["Vehicle.Speed"]).toBe(60);
         });
 
-        it('イグニッションが STOP になった際、各アクチュエータが一斉リセットされること', () => {
+        it('[REQ-001/TC-001] イグニッションが STOP になった際、各アクチュエータが一斉リセットされること', () => {
             const store = useVehicleStore.getState();
             // 仮にいろいろONにする
             store.setVss("Vehicle.Body.Windshield.Wiper.Mode", 'HI');
@@ -105,7 +105,7 @@ describe('useVehicleStore', () => {
             expect(updatedState["Internal.ActiveScenarioTrigger"]).toBeNull();
         });
 
-        it('雨量 (RainIntensity) の境界判定により WasRainBelow10 フラグが変化すること', () => {
+        it('[REQ-004/TC-004-A] 雨量 (RainIntensity) の境界判定により WasRainBelow10 フラグが変化すること (エッジ検出)', () => {
             const store = useVehicleStore.getState();
             
             // 0 -> 15 (10以上への遷移)
@@ -133,7 +133,7 @@ describe('useVehicleStore', () => {
             expect(state["Internal.UserMemoryState"]["Vehicle.Body.Windshield.Wiper.Mode"]).toBe('OFF');
         });
 
-        it('イグニッション START 中に手動操作された際、ManualOverrideFlag と UserMemoryState が更新されること', () => {
+        it('[REQ-006/TC-006] イグニッション START 中に手動操作された際、ManualOverrideFlag と UserMemoryState が更新されること (マニュアルオーバーライド)', () => {
             const store = useVehicleStore.getState();
             
             // イグニッションONの状態にする
