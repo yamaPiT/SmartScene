@@ -1,5 +1,9 @@
 # スマートシーンのデモシステム開発プロジェクト
 
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/yamaPiT/SmartScene?label=最新バージョン)
+![GitHub last commit](https://img.shields.io/github/last-commit/yamaPiT/SmartScene?label=最終更新)
+
+
 本プロジェクトは、以下の2件の目的があります。
 （1）スマートシーンのデモシステム開発（APIはOSDVI公開資料を活用）
 （2）Antigravityでのagent codingの開発プロセス（DADAと命名）の実験
