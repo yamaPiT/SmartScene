@@ -27,6 +27,6 @@ export type ScenarioNode = BaseNode & (
     | { type: 'BLOCK'; children: ScenarioNode[] }
     | { type: 'IF'; condition: Condition; thenBody: ScenarioNode; elseBody?: ScenarioNode }
     | { type: 'ACTION'; action: Action }
-    | { type: 'RESTORE'; targetPattern: string } // e.g. 'Vehicle.Cabin.Door.*.Window.Position'
+    | { type: 'RESTORE'; targetPattern: string } // e.g. 'Vehicle.Cabin.Window.*.Position'
     | { type: 'WAIT'; duration: number } // ms
 );

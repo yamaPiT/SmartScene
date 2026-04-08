@@ -49,9 +49,8 @@ export const ExternalView = () => {
     // この分離アーキテクチャにより、「UIの操作」と「3Dの描画」が疎結合に保たれています。
     const rainLevel = useVehicleStore(s => s["Vehicle.Exterior.Air.RainIntensity"]); // 雨量 (0-100)
 
-    // デフロスタ（前・後）の状態
-    const isFrontDefrosterActive = useVehicleStore(s => s["Vehicle.Cabin.HVAC.IsFrontDefrosterActive"]);
-    const isRearDefrosterActive = useVehicleStore(s => s["Vehicle.Cabin.HVAC.IsRearDefrosterActive"]);
+    // デフォッガ（熱線・曇り止め）の状態を統合
+    const isDefoggerActive = useVehicleStore(s => s["Vehicle.Exterior.Light.Defogger.IsActive"]);
 
     return (
         <div className="w-full h-full min-h-[400px] bg-slate-100 relative overflow-hidden rounded-xl border border-gray-300 shadow-inner flex flex-col items-center justify-center p-4">
@@ -102,8 +101,7 @@ export const ExternalView = () => {
 
                     {/* --- 車両モデル --- */}
                     <CarModel3D
-                        isFrontDefrosterActive={isFrontDefrosterActive}
-                        isRearDefrosterActive={isRearDefrosterActive}
+                        isDefoggerActive={isDefoggerActive}
                     />
 
                     {/* --- 地面（パーキング風アスファルト＆水たまり） --- */}

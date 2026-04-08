@@ -46,6 +46,9 @@ interface VehicleStore extends VehicleState {
 
     // Batch Update for Physics/Scenarios (複数のVSS値を1フレームで一括更新)
     updateState: (newState: Partial<VehicleState>) => void;
+
+    // Service Mock API
+    startMoveWindow: (instance: string, position: number, priority?: number) => void;
 }
 
 
@@ -62,14 +65,14 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
     "Vehicle.Body.Lights.Hazard.IsSignaling": false,
 
     "Vehicle.Body.Windshield.Wiper.Mode": 'OFF',
-    "Vehicle.Cabin.Door.Row1.Left.Window.Position": 0,
-    "Vehicle.Cabin.Door.Row1.Right.Window.Position": 0,
-    "Vehicle.Cabin.Door.Row2.Left.Window.Position": 0,
-    "Vehicle.Cabin.Door.Row2.Right.Window.Position": 0,
+    "Vehicle.Cabin.Window.$FrontLeft.Position": 0,
+    "Vehicle.Cabin.Window.$FrontRight.Position": 0,
+    "Vehicle.Cabin.Window.$RearLeft.Position": 0,
+    "Vehicle.Cabin.Window.$RearRight.Position": 0,
     "Vehicle.Cabin.HVAC.AmbientAirTemperature": 25.0,
     "Vehicle.Cabin.HVAC.Station.Row1.Left.FanSpeed": 'OFF',
-    "Vehicle.Cabin.HVAC.IsFrontDefrosterActive": false,
-    "Vehicle.Cabin.HVAC.IsRearDefrosterActive": false,
+    "Vehicle.Exterior.Light.Defogger.IsActive": false,
+    "Vehicle.Motion.ResponseProfile": 'Standard',
     "Vehicle.ADAS.ObstacleDetection.Rear.Distance": 20.0,
     "Internal.LaneChangeStatus": 'NONE',
     "Internal.LaneChangeStartTime": null,
@@ -120,12 +123,11 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
                                     type: 'BLOCK',
                                     description: '',
                                     children: [
-                                        { id: 'a1', type: 'ACTION', description: '全ての窓を閉める（※事前に現在の窓の開度を記憶すること）', reference: '/* Ref: OSDVI API Spec / VSS Core, p.85 */\n// (内部的に窓の状態をキャッシュし、0%へ向けて駆動開始)', action: { target: 'Vehicle.Cabin.Door.Row1.Left.Window.Position', value: 0 } },
-                                        { id: 'a2', type: 'ACTION', description: '', action: { target: 'Vehicle.Cabin.Door.Row1.Right.Window.Position', value: 0 } },
-                                        { id: 'a3', type: 'ACTION', description: '', action: { target: 'Vehicle.Cabin.Door.Row2.Left.Window.Position', value: 0 } },
-                                        { id: 'a4', type: 'ACTION', description: '', action: { target: 'Vehicle.Cabin.Door.Row2.Right.Window.Position', value: 0 } },
-                                        { id: 'a5', type: 'ACTION', description: 'かつ デフォッガをONにする', reference: '/* Ref: OSDVI API Spec / VSS Core, p.91 "HVAC Rear Defroster" */', action: { target: 'Vehicle.Cabin.HVAC.IsRearDefrosterActive', value: true } },
-                                        { id: 'a6', type: 'ACTION', description: 'かつ デフロスタをONにする', reference: '/* Ref: OSDVI API Spec / VSS Core, p.91 "HVAC Front Defroster" */', action: { target: 'Vehicle.Cabin.HVAC.IsFrontDefrosterActive', value: true } }
+                                        { id: 'a1', type: 'ACTION', description: '全ての窓を閉める（※事前に現在の窓の開度を記憶すること）', reference: '/* Ref: OSDVI API Spec / VSS Core, p.85 */\n// (内部的に窓の状態をキャッシュし、0%へ向けて駆動開始)', action: { target: 'Vehicle.Cabin.Window.$FrontLeft.Position', value: 0 } },
+                                        { id: 'a2', type: 'ACTION', description: '', action: { target: 'Vehicle.Cabin.Window.$FrontRight.Position', value: 0 } },
+                                        { id: 'a3', type: 'ACTION', description: '', action: { target: 'Vehicle.Cabin.Window.$RearLeft.Position', value: 0 } },
+                                        { id: 'a4', type: 'ACTION', description: '', action: { target: 'Vehicle.Cabin.Window.$RearRight.Position', value: 0 } },
+                                        { id: 'a5', type: 'ACTION', description: 'かつ デフォッガをONにする', reference: '/* Ref: OSDVI API Spec / VSS Core, p.91 "HVAC Defogger" */', action: { target: 'Vehicle.Exterior.Light.Defogger.IsActive', value: true } }
                                     ]
                                 }
                             },
@@ -167,10 +169,9 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
                         type: 'BLOCK',
                         description: '全てを雨が降る前の状態に戻す',
                         children: [
-                            { id: 'a-res1', type: 'RESTORE', description: '全てを雨が降る前の状態に戻す', reference: '// (キャッシュしておいた状態へ復元)', targetPattern: 'Vehicle.Cabin.Door.*.Window.Position' },
+                            { id: 'a-res1', type: 'RESTORE', description: '全てを雨が降る前の状態に戻す', reference: '// (キャッシュしておいた状態へ復元)', targetPattern: 'Vehicle.Cabin.Window.*.Position' },
                             { id: 'a-res2', type: 'RESTORE', description: '', targetPattern: 'Vehicle.Body.Windshield.Wiper.Mode' },
-                            { id: 'a-res3', type: 'RESTORE', description: '', targetPattern: 'Vehicle.Cabin.HVAC.IsRearDefrosterActive' },
-                            { id: 'a-res4', type: 'RESTORE', description: '', targetPattern: 'Vehicle.Cabin.HVAC.IsFrontDefrosterActive' }
+                            { id: 'a-res3', type: 'RESTORE', description: '', targetPattern: 'Vehicle.Exterior.Light.Defogger.IsActive' }
                         ]
                     }
                 }
@@ -262,13 +263,12 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
             return {
                 isScenarioRunning: true,
                 "Internal.PreRunStateCache": {
-                    "Vehicle.Cabin.Door.Row1.Left.Window.Position": state["Vehicle.Cabin.Door.Row1.Left.Window.Position"],
-                    "Vehicle.Cabin.Door.Row1.Right.Window.Position": state["Vehicle.Cabin.Door.Row1.Right.Window.Position"],
-                    "Vehicle.Cabin.Door.Row2.Left.Window.Position": state["Vehicle.Cabin.Door.Row2.Left.Window.Position"],
-                    "Vehicle.Cabin.Door.Row2.Right.Window.Position": state["Vehicle.Cabin.Door.Row2.Right.Window.Position"],
+                    "Vehicle.Cabin.Window.$FrontLeft.Position": state["Vehicle.Cabin.Window.$FrontLeft.Position"],
+                    "Vehicle.Cabin.Window.$FrontRight.Position": state["Vehicle.Cabin.Window.$FrontRight.Position"],
+                    "Vehicle.Cabin.Window.$RearLeft.Position": state["Vehicle.Cabin.Window.$RearLeft.Position"],
+                    "Vehicle.Cabin.Window.$RearRight.Position": state["Vehicle.Cabin.Window.$RearRight.Position"],
                     "Vehicle.Body.Windshield.Wiper.Mode": state["Vehicle.Body.Windshield.Wiper.Mode"],
-                    "Vehicle.Cabin.HVAC.IsFrontDefrosterActive": state["Vehicle.Cabin.HVAC.IsFrontDefrosterActive"],
-                    "Vehicle.Cabin.HVAC.IsRearDefrosterActive": state["Vehicle.Cabin.HVAC.IsRearDefrosterActive"],
+                    "Vehicle.Exterior.Light.Defogger.IsActive": state["Vehicle.Exterior.Light.Defogger.IsActive"],
                 },
                 "Internal.ManualOverrideFlags": {} // オーバーライド（手動介入記録）もリセット
             };
@@ -323,8 +323,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
             // [REQ-001] [ 制約処理 ]: イグニッションがSTOPになったら、シナリオやワイパー等の全アクチュエータを強制停止
             if (key === "Vehicle.IgnitionState" && value === 'STOP') {
                 updates["Vehicle.Body.Windshield.Wiper.Mode"] = 'OFF';
-                updates["Vehicle.Cabin.HVAC.IsFrontDefrosterActive"] = false;
-                updates["Vehicle.Cabin.HVAC.IsRearDefrosterActive"] = false;
+                updates["Vehicle.Exterior.Light.Defogger.IsActive"] = false;
                 updates["Vehicle.Cabin.HVAC.Station.Row1.Left.FanSpeed"] = 'OFF';
                 updates["Vehicle.Body.Lights.DirectionIndicator.Left.IsSignaling"] = false;
                 updates["Vehicle.Body.Lights.DirectionIndicator.Right.IsSignaling"] = false;
@@ -350,13 +349,12 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
             // When Ignition transitions to START, initialize UserMemoryState
             if (key === "Vehicle.IgnitionState" && value === 'START') {
                 updates["Internal.UserMemoryState"] = {
-                    "Vehicle.Cabin.Door.Row1.Left.Window.Position": state["Vehicle.Cabin.Door.Row1.Left.Window.Position"],
-                    "Vehicle.Cabin.Door.Row1.Right.Window.Position": state["Vehicle.Cabin.Door.Row1.Right.Window.Position"],
-                    "Vehicle.Cabin.Door.Row2.Left.Window.Position": state["Vehicle.Cabin.Door.Row2.Left.Window.Position"],
-                    "Vehicle.Cabin.Door.Row2.Right.Window.Position": state["Vehicle.Cabin.Door.Row2.Right.Window.Position"],
+                    "Vehicle.Cabin.Window.$FrontLeft.Position": state["Vehicle.Cabin.Window.$FrontLeft.Position"],
+                    "Vehicle.Cabin.Window.$FrontRight.Position": state["Vehicle.Cabin.Window.$FrontRight.Position"],
+                    "Vehicle.Cabin.Window.$RearLeft.Position": state["Vehicle.Cabin.Window.$RearLeft.Position"],
+                    "Vehicle.Cabin.Window.$RearRight.Position": state["Vehicle.Cabin.Window.$RearRight.Position"],
                     "Vehicle.Body.Windshield.Wiper.Mode": 'OFF',
-                    "Vehicle.Cabin.HVAC.IsFrontDefrosterActive": false,
-                    "Vehicle.Cabin.HVAC.IsRearDefrosterActive": false,
+                    "Vehicle.Exterior.Light.Defogger.IsActive": false,
                 };
             }
 
@@ -375,13 +373,12 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
                     // 同時に、手動操作によりユーザーが期待した最新の状態を UserMemoryState にバックアップ。
                     // （雨がやんでRESTOREする際に、自動制御が行われた「前」ではなく、手動操作後の「今」の状態へ戻すため）
                     const trackedKeys = [
-                        "Vehicle.Cabin.Door.Row1.Left.Window.Position",
-                        "Vehicle.Cabin.Door.Row1.Right.Window.Position",
-                        "Vehicle.Cabin.Door.Row2.Left.Window.Position",
-                        "Vehicle.Cabin.Door.Row2.Right.Window.Position",
+                        "Vehicle.Cabin.Window.$FrontLeft.Position",
+                        "Vehicle.Cabin.Window.$FrontRight.Position",
+                        "Vehicle.Cabin.Window.$RearLeft.Position",
+                        "Vehicle.Cabin.Window.$RearRight.Position",
                         "Vehicle.Body.Windshield.Wiper.Mode",
-                        "Vehicle.Cabin.HVAC.IsFrontDefrosterActive",
-                        "Vehicle.Cabin.HVAC.IsRearDefrosterActive"
+                        "Vehicle.Exterior.Light.Defogger.IsActive"
                     ];
 
                     if (trackedKeys.includes(key as string)) {
@@ -409,4 +406,13 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         const updates = { ...newState } as any;
         return { ...state, ...updates };
     }),
+
+    /**
+     * @function startMoveWindow
+     * @description OSDVI 202603α で新設された startMove メソッドのモック実装。
+     */
+    startMoveWindow: (instance: string, position: number, priority?: number) => {
+        const key = `Vehicle.Cabin.Window.${instance}.Position` as keyof VehicleState;
+        get().setVss(key, position as any);
+    },
 }));

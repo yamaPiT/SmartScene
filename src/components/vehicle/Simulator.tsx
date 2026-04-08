@@ -128,10 +128,10 @@ export const Simulator = () => {
             };
 
             const windows = [
-                { id: 'FL', key: "Vehicle.Cabin.Door.Row1.Left.Window.Position" as const },
-                { id: 'FR', key: "Vehicle.Cabin.Door.Row1.Right.Window.Position" as const },
-                { id: 'RL', key: "Vehicle.Cabin.Door.Row2.Left.Window.Position" as const },
-                { id: 'RR', key: "Vehicle.Cabin.Door.Row2.Right.Window.Position" as const },
+                { id: 'FL', key: "Vehicle.Cabin.Window.$FrontLeft.Position" as const },
+                { id: 'FR', key: "Vehicle.Cabin.Window.$FrontRight.Position" as const },
+                { id: 'RL', key: "Vehicle.Cabin.Window.$RearLeft.Position" as const },
+                { id: 'RR', key: "Vehicle.Cabin.Window.$RearRight.Position" as const },
             ];
 
             const targets = state["Internal.WindowTarget"] || {};

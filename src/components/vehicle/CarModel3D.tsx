@@ -13,25 +13,23 @@ import * as THREE from 'three';
 import { Html, Text, RoundedBox } from '@react-three/drei';
 
 type CarModel3DProps = {
-    isFrontDefrosterActive?: boolean;
-    isRearDefrosterActive?: boolean;
+    isDefoggerActive?: boolean;
 };
 
 /**
  * @component CarModel3D
  * @description SUV形状の3D車両モデルを構築し、内部状態の変化に連動してアニメーション描画を行うメインコンポーネント。
  * ライトやウインカーの点滅、ワイパーの払拭動作、窓ガラスの昇降などを`useFrame`フックを用いてフレームごとに計算・反映します。
- * @param {boolean} isFrontDefrosterActive - フロントデフロスタの作動状態。true時に熱風アニメーションを描画。
- * @param {boolean} isRearDefrosterActive - リアデフォッガの作動状態。true時に熱線（赤色発光）アニメーションを描画。
+ * @param {boolean} isDefoggerActive - 統合されたデフォッガ/デフロスタ作動状態
  */
-export function CarModel3D({ isFrontDefrosterActive = false, isRearDefrosterActive = false }: CarModel3DProps) {
+export function CarModel3D({ isDefoggerActive = false }: CarModel3DProps) {
     // -------------------------------------------------------------
     // 【Store (状態管理) からのデータ取得】
     // -------------------------------------------------------------
-    const wFL = useVehicleStore(s => s["Vehicle.Cabin.Door.Row1.Left.Window.Position"]);
-    const wFR = useVehicleStore(s => s["Vehicle.Cabin.Door.Row1.Right.Window.Position"]);
-    const wRL = useVehicleStore(s => s["Vehicle.Cabin.Door.Row2.Left.Window.Position"]);
-    const wRR = useVehicleStore(s => s["Vehicle.Cabin.Door.Row2.Right.Window.Position"]);
+    const wFL = useVehicleStore(s => s["Vehicle.Cabin.Window.$FrontLeft.Position"]);
+    const wFR = useVehicleStore(s => s["Vehicle.Cabin.Window.$FrontRight.Position"]);
+    const wRL = useVehicleStore(s => s["Vehicle.Cabin.Window.$RearLeft.Position"]);
+    const wRR = useVehicleStore(s => s["Vehicle.Cabin.Window.$RearRight.Position"]);
 
     const wiperMode = useVehicleStore(s => s["Vehicle.Body.Windshield.Wiper.Mode"]);
     const rainLevel = useVehicleStore(s => s["Vehicle.Exterior.Air.RainIntensity"]);
@@ -159,7 +157,7 @@ export function CarModel3D({ isFrontDefrosterActive = false, isRearDefrosterActi
         if (wiperRightArmRef.current) wiperRightArmRef.current.rotation.z = angle - Math.PI / 2 + 0.1;
 
         // 3. デフロスタ矢印アニメーション
-        if (isFrontDefrosterActive) {
+        if (isDefoggerActive) {
             const animateDefroster = (ref: React.RefObject<THREE.Group | null>, offset: number) => {
                 if (!ref.current) return;
                 const modTime = (t * 1.5 + offset) % 1;
@@ -258,7 +256,7 @@ export function CarModel3D({ isFrontDefrosterActive = false, isRearDefrosterActi
                     <meshPhysicalMaterial color="#aaccff" transmission={0.95} opacity={1} transparent roughness={0} clearcoat={1.0} clearcoatRoughness={0} ior={1.5} thickness={0.03} />
                 </RoundedBox>
 
-                {isFrontDefrosterActive && (
+                {isDefoggerActive && (
                     <group position={[0, 0, 0]}>
                         {[frontDefrosterRef1, frontDefrosterRef2, frontDefrosterRef3].map((ref, idx) => (
                             <group key={idx} ref={ref}>
@@ -297,9 +295,9 @@ export function CarModel3D({ isFrontDefrosterActive = false, isRearDefrosterActi
                         <mesh key={`def-${idx}`} position={[0, yOffset, 0]}>
                             <boxGeometry args={[bodyW - 0.4, 0.015, 0.01]} />
                             <meshStandardMaterial
-                                color={isRearDefrosterActive ? "#ff0000" : "#000000"}
-                                emissive={isRearDefrosterActive ? "#ff0000" : "#000000"}
-                                emissiveIntensity={isRearDefrosterActive ? 3.0 : 0}
+                                color={isDefoggerActive ? "#ff0000" : "#000000"}
+                                emissive={isDefoggerActive ? "#ff0000" : "#000000"}
+                                emissiveIntensity={isDefoggerActive ? 3.0 : 0}
                             />
                         </mesh>
                     ))}

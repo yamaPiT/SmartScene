@@ -15,19 +15,21 @@ export type VehicleState = {
     "Vehicle.Body.Lights.Hazard.IsSignaling": boolean;
 
     "Vehicle.Body.Windshield.Wiper.Mode": 'OFF' | 'INT' | 'LO' | 'HI' | 'AUTO';
-    "Vehicle.Cabin.Door.Row1.Left.Window.Position": number;   // 0-100% (FL)
-    "Vehicle.Cabin.Door.Row1.Right.Window.Position": number;  // (FR)
-    "Vehicle.Cabin.Door.Row2.Left.Window.Position": number;   // (RL)
-    "Vehicle.Cabin.Door.Row2.Right.Window.Position": number;  // (RR)
+    "Vehicle.Cabin.Window.$FrontLeft.Position": number;   // 0-100% (FL)
+    "Vehicle.Cabin.Window.$FrontRight.Position": number;  // (FR)
+    "Vehicle.Cabin.Window.$RearLeft.Position": number;   // (RL)
+    "Vehicle.Cabin.Window.$RearRight.Position": number;  // (RR)
 
-    // HVAC
+    // HVAC & Defogger
     "Vehicle.Cabin.HVAC.AmbientAirTemperature": number;
     "Vehicle.Cabin.HVAC.Station.Row1.Left.FanSpeed": 'OFF' | 'LO' | 'MED' | 'HI' | 'AUTO';
-    "Vehicle.Cabin.HVAC.IsFrontDefrosterActive": boolean;     // デフロスタ (Front, 温風)
-    "Vehicle.Cabin.HVAC.IsRearDefrosterActive": boolean;      // デフォッガ (Rear, 電熱線)
+    "Vehicle.Exterior.Light.Defogger.IsActive": boolean;      // デフォッガ統合版
 
     // ADAS (New)
     "Vehicle.ADAS.ObstacleDetection.Rear.Distance": number;   // m
+
+    // Motion
+    "Vehicle.Motion.ResponseProfile": 'Standard' | 'Maximum' | 'Rapid' | 'Gentle';
 
     // App Specific (Internal State)
     "Internal.LaneChangeStatus": 'NONE' | 'CHANGING' | 'COMPLETED';

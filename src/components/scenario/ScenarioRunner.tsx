@@ -123,14 +123,14 @@ export const ScenarioRunner = () => {
                 const currentTargets = state["Internal.WindowTarget"] || {};
                 const updates: Partial<any> = {};
 
-                if (node.targetPattern === 'Vehicle.Cabin.Door.*.Window.Position') {
+                if (node.targetPattern === 'Vehicle.Cabin.Window.*.Position') {
                     // Extract only cached window positions to update WindowTarget
                     const windowTargets: Record<string, number> = {};
                     const targets = [
-                        { key: 'FL', prop: 'Vehicle.Cabin.Door.Row1.Left.Window.Position' },
-                        { key: 'FR', prop: 'Vehicle.Cabin.Door.Row1.Right.Window.Position' },
-                        { key: 'RL', prop: 'Vehicle.Cabin.Door.Row2.Left.Window.Position' },
-                        { key: 'RR', prop: 'Vehicle.Cabin.Door.Row2.Right.Window.Position' }
+                        { key: 'FL', prop: 'Vehicle.Cabin.Window.$FrontLeft.Position' },
+                        { key: 'FR', prop: 'Vehicle.Cabin.Window.$FrontRight.Position' },
+                        { key: 'RL', prop: 'Vehicle.Cabin.Window.$RearLeft.Position' },
+                        { key: 'RR', prop: 'Vehicle.Cabin.Window.$RearRight.Position' }
                     ];
 
                     targets.forEach(t => {

@@ -51,8 +51,8 @@ export const ControlPanel = () => {
     const fanSpeed = useVehicleStore(s => s["Vehicle.Cabin.HVAC.Station.Row1.Left.FanSpeed"]); // エアコンの風量 (OFF/LO/MED/HI/AUTO)
 
     // デフロスタ（フロントの曇り止め：温風）とデフォッガ（リアの曇り止め：電熱線）
-    const frontDef = useVehicleStore(s => s["Vehicle.Cabin.HVAC.IsFrontDefrosterActive"]);
-    const rearDef = useVehicleStore(s => s["Vehicle.Cabin.HVAC.IsRearDefrosterActive"]);
+    const frontDef = useVehicleStore(s => s["Vehicle.Exterior.Light.Defogger.IsActive"]);
+    const rearDef = useVehicleStore(s => s["Vehicle.Exterior.Light.Defogger.IsActive"]);
 
     // 灯火類（ハザード・ウインカー）の状態
     const hazard = useVehicleStore(s => s["Vehicle.Body.Lights.Hazard.IsSignaling"]);
@@ -132,10 +132,10 @@ export const ControlPanel = () => {
         };
 
         if (target === 'ALL') {
-            processRelease('FL', "Vehicle.Cabin.Door.Row1.Left.Window.Position");
-            processRelease('FR', "Vehicle.Cabin.Door.Row1.Right.Window.Position");
-            processRelease('RL', "Vehicle.Cabin.Door.Row2.Left.Window.Position");
-            processRelease('RR', "Vehicle.Cabin.Door.Row2.Right.Window.Position");
+            processRelease('FL', "Vehicle.Cabin.Window.$FrontLeft.Position");
+            processRelease('FR', "Vehicle.Cabin.Window.$FrontRight.Position");
+            processRelease('RL', "Vehicle.Cabin.Window.$RearLeft.Position");
+            processRelease('RR', "Vehicle.Cabin.Window.$RearRight.Position");
         } else {
             const row = target.startsWith('F') ? 'Row1' : 'Row2';
             const side = target.endsWith('L') ? 'Left' : 'Right';
@@ -174,10 +174,10 @@ export const ControlPanel = () => {
 
         if (state["Vehicle.IgnitionState"] === 'START') {
             const flags = { ...state["Internal.ManualOverrideFlags"] };
-            flags["Vehicle.Cabin.Door.Row1.Left.Window.Position"] = true;
-            flags["Vehicle.Cabin.Door.Row1.Right.Window.Position"] = true;
-            flags["Vehicle.Cabin.Door.Row2.Left.Window.Position"] = true;
-            flags["Vehicle.Cabin.Door.Row2.Right.Window.Position"] = true;
+            flags["Vehicle.Cabin.Window.$FrontLeft.Position"] = true;
+            flags["Vehicle.Cabin.Window.$FrontRight.Position"] = true;
+            flags["Vehicle.Cabin.Window.$RearLeft.Position"] = true;
+            flags["Vehicle.Cabin.Window.$RearRight.Position"] = true;
             updates["Internal.ManualOverrideFlags"] = flags;
             updates["Internal.UserMemoryState"] = memory;
         }
@@ -393,7 +393,7 @@ export const ControlPanel = () => {
                 {/* Defroster & Defogger */}
                 <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-gray-700">
                     <button
-                        onClick={() => setVss("Vehicle.Cabin.HVAC.IsFrontDefrosterActive", !frontDef)}
+                        onClick={() => setVss("Vehicle.Exterior.Light.Defogger.IsActive", !frontDef)}
                         className={clsx(
                             "w-full text-xs py-2 rounded flex items-center justify-center gap-2 border transition-colors",
                             frontDef ? "bg-orange-900/50 border-orange-500 text-orange-200" : "bg-gray-800 border-transparent text-gray-400 hover:bg-gray-700"
@@ -402,7 +402,7 @@ export const ControlPanel = () => {
                         <Wind size={14} /> DEFROSTER (FRONT) {frontDef ? 'ON' : 'OFF'}
                     </button>
                     <button
-                        onClick={() => setVss("Vehicle.Cabin.HVAC.IsRearDefrosterActive", !rearDef)}
+                        onClick={() => setVss("Vehicle.Exterior.Light.Defogger.IsActive", !rearDef)}
                         className={clsx(
                             "w-full text-xs py-2 rounded flex items-center justify-center gap-2 border transition-colors",
                             rearDef ? "bg-orange-900/50 border-orange-500 text-orange-200" : "bg-gray-800 border-transparent text-gray-400 hover:bg-gray-700"

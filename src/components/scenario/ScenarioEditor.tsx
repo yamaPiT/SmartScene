@@ -26,7 +26,7 @@ export const ScenarioEditor = () => {
             </div>
 
             <div className="p-4 bg-gray-950 border-t border-gray-800 text-xs text-gray-500 shrink-0">
-                * Read-Only. 自然言語の要求仕様とOSDVI標準APIのコード表現の対応関係を学習します。
+                * Read-Only. 自然言語の要求仕様とOSDVI標準APIのコード表現の対応関係を確認できます。
             </div>
         </div>
     );

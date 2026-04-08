@@ -60,13 +60,13 @@ describe('useVehicleStore', () => {
 
         it('setScenarioRunning: true の際、フラグとキャッシュが初期化されること', () => {
             // 前もって窓を少し開けておく
-            useVehicleStore.getState().setVss("Vehicle.Cabin.Door.Row1.Left.Window.Position", 50);
+            useVehicleStore.getState().setVss("Vehicle.Cabin.Window.$FrontLeft.Position", 50);
 
             useVehicleStore.getState().setScenarioRunning(true);
             const state = useVehicleStore.getState();
 
             expect(state.isScenarioRunning).toBe(true);
-            expect(state["Internal.PreRunStateCache"]["Vehicle.Cabin.Door.Row1.Left.Window.Position"]).toBe(50);
+            expect(state["Internal.PreRunStateCache"]["Vehicle.Cabin.Window.$FrontLeft.Position"]).toBe(50);
             expect(state["Internal.ManualOverrideFlags"]).toEqual({});
         });
 
@@ -92,7 +92,7 @@ describe('useVehicleStore', () => {
             const store = useVehicleStore.getState();
             // 仮にいろいろONにする
             store.setVss("Vehicle.Body.Windshield.Wiper.Mode", 'HI');
-            store.setVss("Vehicle.Cabin.HVAC.IsFrontDefrosterActive", true);
+            store.setVss("Vehicle.Exterior.Light.Defogger.IsActive", true);
             store.setVss("Vehicle.Body.Lights.Hazard.IsSignaling", true);
 
             // STOPに遷移
@@ -100,7 +100,7 @@ describe('useVehicleStore', () => {
 
             const updatedState = useVehicleStore.getState();
             expect(updatedState["Vehicle.Body.Windshield.Wiper.Mode"]).toBe('OFF');
-            expect(updatedState["Vehicle.Cabin.HVAC.IsFrontDefrosterActive"]).toBe(false);
+            expect(updatedState["Vehicle.Exterior.Light.Defogger.IsActive"]).toBe(false);
             expect(updatedState["Vehicle.Body.Lights.Hazard.IsSignaling"]).toBe(false);
             expect(updatedState["Internal.ActiveScenarioTrigger"]).toBeNull();
         });
@@ -123,12 +123,12 @@ describe('useVehicleStore', () => {
 
         it('イグニッションが START 時に UserMemoryState が初期化されること', () => {
             const store = useVehicleStore.getState();
-            store.setVss("Vehicle.Cabin.Door.Row1.Left.Window.Position", 30);
+            store.setVss("Vehicle.Cabin.Window.$FrontLeft.Position", 30);
             
             store.setVss("Vehicle.IgnitionState", "START");
             
             const state = useVehicleStore.getState();
-            expect(state["Internal.UserMemoryState"]["Vehicle.Cabin.Door.Row1.Left.Window.Position"]).toBe(30);
+            expect(state["Internal.UserMemoryState"]["Vehicle.Cabin.Window.$FrontLeft.Position"]).toBe(30);
             // ワイパーなどはOFFで初期化される指定
             expect(state["Internal.UserMemoryState"]["Vehicle.Body.Windshield.Wiper.Mode"]).toBe('OFF');
         });
