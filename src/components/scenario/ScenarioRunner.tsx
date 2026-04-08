@@ -118,8 +118,9 @@ export const ScenarioRunner = () => {
                 }
             }
             else if (node.type === 'RESTORE') {
-                const memory = (state["Internal.UserMemoryState"] || {}) as any;
-                const flags = state["Internal.ManualOverrideFlags"] || {};
+                // 雨が降る直前の状態（PreRunStateCache）を直接参照して復元する。
+                // 復元後、キャッシュの当該キーを削除することで毎サイクルの再ループを防止。
+                const memory = { ...(state["Internal.PreRunStateCache"] || {}) } as any;
                 const currentTargets = state["Internal.WindowTarget"] || {};
                 const updates: Partial<any> = {};
 
@@ -134,23 +135,25 @@ export const ScenarioRunner = () => {
                     ];
 
                     targets.forEach(t => {
-                        if (t.prop in memory && !flags[t.prop]) {
+                        // User Override の有無に関わらず、必ず雨降り前の状態に戻す
+                        if (memory[t.prop] !== undefined) {
                             windowTargets[t.key] = memory[t.prop];
+                            delete memory[t.prop]; // 1回だけリストアするためにキャッシュから削除
                         }
                     });
 
-                    // Only update WindowTarget if we actually have overrides to apply to prevent unnecessarily triggering updates
+                    // Only update WindowTarget if we actually have overrides to apply
                     if (Object.keys(windowTargets).length > 0) {
                         updates["Internal.WindowTarget"] = {
                             ...currentTargets,
                             ...windowTargets
                         };
+                        updates["Internal.PreRunStateCache"] = memory;
                     }
-                } else if (node.targetPattern in memory) {
-                    if (!flags[node.targetPattern]) {
-                        // Exact property match (e.g. Wiper Mode, Defrosters)
-                        updates[node.targetPattern] = memory[node.targetPattern];
-                    }
+                } else if (memory[node.targetPattern] !== undefined) {
+                    updates[node.targetPattern] = memory[node.targetPattern];
+                    delete memory[node.targetPattern];
+                    updates["Internal.PreRunStateCache"] = memory;
                 }
 
                 if (Object.keys(updates).length > 0) {
@@ -180,24 +183,31 @@ export const ScenarioRunner = () => {
                     return;
                 }
 
-                // If Action targets a Window Position, animate it by setting Target instead of direct teleport
-                if (node.action.target.includes('.Window.Position')) {
-                    const windowMatch = node.action.target.match(/Door\.(Row[12])\.(Left|Right)\.Window/);
-                    if (windowMatch) {
-                        const row = windowMatch[1];
-                        const side = windowMatch[2];
-                        const key = `${row === 'Row1' ? 'F' : 'R'}${side === 'Left' ? 'L' : 'R'}`; // e.g., 'FL'
+                // もしアクションの対象が窓の開度（Position）なら、即座に値を設定するのではなく
+                // Internal.WindowTarget を経由してSimulator.tsxの物理ループでスムーズにアニメーションさせる
+                if (node.action.target.includes('.Window.') && node.action.target.includes('.Position')) {
+                    // OSDVI 202603α準拠の $Instance パスからキーを抽出する
+                    // 例: "Vehicle.Cabin.Window.$FrontLeft.Position" → "FL"
+                    const instanceMap: Record<string, string> = {
+                        '$FrontLeft': 'FL',
+                        '$FrontRight': 'FR',
+                        '$RearLeft': 'RL',
+                        '$RearRight': 'RR',
+                    };
+                    const instanceMatch = node.action.target.match(/\.\$(\w+)\./);
+                    const instanceKey = instanceMatch ? instanceMap[`$${instanceMatch[1]}`] : null;
 
+                    if (instanceKey) {
                         const currentTargets = state["Internal.WindowTarget"] || {};
                         state.updateState({
                             "Internal.WindowTarget": {
                                 ...currentTargets,
-                                [key]: node.action.value as number
+                                [instanceKey]: node.action.value as number
                             }
                         });
                     }
                 } else {
-                    // Normal Action: Execute immediately
+                    // 窓以外のアクション: 即座に適用
                     state.updateState({ [node.action.target]: node.action.value });
                 }
             }

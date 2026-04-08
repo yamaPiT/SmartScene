@@ -339,6 +339,16 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
 
                 if (prevRain < 10 && newRain >= 10) {
                     updates["Internal.WasRainBelow10"] = true; // 10%未満から10%以上への立ち上がりエッジ
+                    
+                    // 【追加】雨が降り始める直前の状態（窓、ワイパー、デフォッガ）をキャッシュ
+                    updates["Internal.PreRunStateCache"] = {
+                        "Vehicle.Cabin.Window.$FrontLeft.Position": state["Vehicle.Cabin.Window.$FrontLeft.Position"],
+                        "Vehicle.Cabin.Window.$FrontRight.Position": state["Vehicle.Cabin.Window.$FrontRight.Position"],
+                        "Vehicle.Cabin.Window.$RearLeft.Position": state["Vehicle.Cabin.Window.$RearLeft.Position"],
+                        "Vehicle.Cabin.Window.$RearRight.Position": state["Vehicle.Cabin.Window.$RearRight.Position"],
+                        "Vehicle.Body.Windshield.Wiper.Mode": state["Vehicle.Body.Windshield.Wiper.Mode"],
+                        "Vehicle.Exterior.Light.Defogger.IsActive": state["Vehicle.Exterior.Light.Defogger.IsActive"],
+                    };
                 } else if (prevRain >= 10 && newRain >= 10) {
                     updates["Internal.WasRainBelow10"] = false; // 降り続けている状態
                 } else if (newRain < 10) {
