@@ -312,20 +312,19 @@ AIが `requirements-engineer`（要求定義エンジニア）として起動し
 
 ## 🔌 context7 (MCPサーバー) の設定について
 
-AIエージェントが最新のライブラリドキュメントを自律的に参照できるようにする、オプション設定です。
+AIエージェントが最新のライブラリのドキュメントを自律的に参照できるよう、`context7` MCPサーバーの利用を推奨します。
 
-> 💡 **初学者の方へ**
-> この設定は**完全に任意**です。デモシステムを「まず動かしてみるだけ」であれば、**ここから下は無視してそのままご利用ください。**
-
-context7 を使わない場合は、エディタ内の `.cursor/rules/use-context7-for-docs.mdc` を削除するだけで、設定なしに通常のAI開発をスタートできます。
+> 💡 **context7を使わない場合**
+> `.cursor/rules/use-context7-for-docs.mdc` ファイルを削除するだけで、通常のAI開発をスタートできます。
 
 ### (1) context7 API Keyの取得
-* [https://context7.com/](https://context7.com/) にGoogleアカウント等でサインインする。
-* 上部の `More...` → `Create API Key` でAPI Keyを作成しコピーする。
+* [https://context7.com/](https://context7.com/) にサインインし、`More...` メニュー内の `Create API Key` からAPI Keyを取得します。
 
 ### (2) AntigravityでのMCPサーバー設定
-* Antigravity画面右上の三点ドット → `MCP Servers` → `View raw config` を選択する。
-* 以下のように設定する。`YOUR_API_KEY` を取得したキーに置き換える。
+* Antigravityの設定ファイルディレクトリ内にある `mcp_config.json` を開きます。
+  * **Windowsの場合**: `C:\Users\<ユーザー名>\.gemini\antigravity\mcp_config.json`
+  * **Macの場合**: `~/.gemini/antigravity/mcp_config.json`
+* 以下のように `mcpServers` 内に `context7` の設定を追記し、`YOUR_API_KEY` を取得したキーに置き換えます。
 
 ```json
 {
@@ -337,8 +336,8 @@ context7 を使わない場合は、エディタ内の `.cursor/rules/use-contex
   }
 }
 ```
-
 ---
+
 
 ## 📄 ドキュメントとプロセスガイドライン
 
