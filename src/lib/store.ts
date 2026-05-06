@@ -2,18 +2,19 @@ import { create } from 'zustand';
 import { VehicleState } from './types';
 import { ScenarioNode } from './scenarioTypes';
 
-/*
-  =============================================================================
-  【グローバル状態管理 (Store)】
-  このファイルは、本教育用シミュレータの中枢となる状態管理（Zustand）を定義しています。
-  
-  ■ 主な役割・要求仕様（SW105）とのマッピング:
-  1. OSDVI / VSS に準拠した車載API状態の管理 ([REQ-002] アクチュエータ制御)
-  2. シナリオツリーの保持と実行管理 ([REQ-004] 雨天シナリオ、[REQ-005] サンキューハザード)
-  3. 自動制御と手動操作の衝突時の優先権（マニュアルオーバーライド）([REQ-006])
-  4. イグニッション管理と制御初期化・復旧キャッシュ管理（PreRunStateCache）([REQ-001])
-  =============================================================================
-*/
+/**
+ * @file store.ts
+ * @description 【グローバル状態管理 (Store)】
+ * 本教育用シミュレータの中枢となる状態管理（Zustand）を定義する。
+ * DADAプロセスにおける「Agentic Testability」および「疎結合アーキテクチャ」の要として機能し、
+ * 車両状態の保持、シナリオ実行状態の管理、およびマニュアルオーバーライドの調停を一元的に担う。
+ * 
+ * ■ ソフトウェア要求仕様書（SW105）とのトレーサビリティ:
+ * - [REQ-F01] OSDVI 202603α準拠の状態管理
+ * - [REQ-F02] スマートシナリオによる自動制御 (シナリオツリーの保持と実行管理)
+ * - [REQ-F03] 手動操作との調停（マニュアルオーバーライドとRESTORE）
+ * - [REQ-V03] アクチュエータ動作アニメーション（物理挙動の裏付けとなる状態更新）
+ */
 
 export const USER_OVERRIDE_DURATION = 3000; // ms
 
@@ -285,7 +286,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
     /**
      * @function resetScenarios
      * @description ストアに保持されている全シナリオリストを、指定された新しいリストで上書きリセットします。
-     * 初期化や外部JSONからのロード時等に使用されます。
+     * 初期化や外部JSONからのロード時等に使用されます。これによりテスト容易性(Agentic Testability)を確保します。
      * @param {ScenarioNode[]} newScenarios - リセット後に設定する新しいシナリオノードの配列。
      */
     resetScenarios: (newScenarios: ScenarioNode[]) => set({ scenarios: newScenarios }),
@@ -420,6 +421,10 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
     /**
      * @function startMoveWindow
      * @description OSDVI 202603α で新設された startMove メソッドのモック実装。
+     * 窓の開閉に関するサービスコールを抽象化し、直接的な値の代入ではなくサービス呼び出しを通じた状態更新（[REQ-F01]準拠）を実現します。
+     * @param {string} instance - 窓のインスタンス名 (例: '$FrontLeft')。
+     * @param {number} position - 目標開度 (0〜100)。
+     * @param {number} [priority] - 操作優先度 (オプション)。
      */
     startMoveWindow: (instance: string, position: number, priority?: number) => {
         const key = `Vehicle.Cabin.Window.${instance}.Position` as keyof VehicleState;

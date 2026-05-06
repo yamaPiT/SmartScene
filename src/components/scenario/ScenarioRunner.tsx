@@ -1,12 +1,14 @@
 "use client";
 
 /**
- * =============================================================================
- * 【ファイルヘッダ: ScenarioRunner.tsx】
  * @file ScenarioRunner.tsx
- * @description スマートシナリオエンジンの頭脳となるバックグラウンドコンポーネント（UIは持ちません）。
- * Zustandストア上のシナリオ定義（AST形式のJSON）を周期的に評価し、条件成立時のアクション自動実行やマニュアルオーバーライドの調停を行います。
- * =============================================================================
+ * @description 【スマートシナリオエンジン本体】
+ * Zustandストア上のシナリオ定義（AST形式のJSON）を100ms周期で評価し、条件成立時のアクション自動実行や
+ * マニュアルオーバーライドの調停を行うバックグラウンドコンポーネント（UIは持たない）。
+ * 
+ * ■ ソフトウェア要求仕様書（SW105）とのトレーサビリティ:
+ * - [REQ-F02] スマートシナリオによる自動制御
+ * - [REQ-F03] 手動操作との調停（マニュアルオーバーライド）
  */
 import { useEffect, useRef } from "react";
 import { useVehicleStore, USER_OVERRIDE_DURATION } from "@/lib/store";
@@ -15,8 +17,9 @@ import { ScenarioNode, Condition, Action } from "@/lib/scenarioTypes";
 /**
  * @component ScenarioRunner
  * @description 100ms周期のメインループにて現在有効なシナリオツリーを解析（ポーリング）するエンジン本体。
- * `evaluateCondition` にてエッジ検出を判定し、`executeNode` にて非同期実行（WAIT等）を含むツリートラバーサルを行います。
- * また、ドライバーからの手動操作記録（`ManualOverrideFlags`）を監視し、自動制御の介入を一時停止・無効化する責任も持ちます。
+ * `evaluateCondition` にてエッジ検出を判定し、`executeNode` にて非同期実行（WAIT等）を含むツリートラバーサルを行う。
+ * また、ドライバーからの手動操作記録（`ManualOverrideFlags`）を監視し、自動制御の介入を一時停止・無効化する責任も持つ。
+ * @returns {null} UIを持たないためnullを返す
  */
 export const ScenarioRunner = () => {
     const { scenarios } = useVehicleStore();

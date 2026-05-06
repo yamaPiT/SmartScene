@@ -1,9 +1,24 @@
 "use client";
 
+/**
+ * @file ScenarioEditor.tsx
+ * @description 【APIビューア (シミュレータUI部)】
+ * Zustandストアからシナリオ（AST）を読み込み、自然言語の要件と対応するOSDVI API（202603α）の
+ * コード表現をRead-Onlyで表示するUIコンポーネント。
+ * 
+ * ■ ソフトウェア要求仕様書（SW105）とのトレーサビリティ:
+ * - 5.1 外部インタフェース要求 (APIビューア)
+ */
+
 import { useVehicleStore } from "@/lib/store";
 import { ScenarioBlock } from "./ScenarioBlock";
 import { Code } from "lucide-react";
 
+/**
+ * @component ScenarioEditor
+ * @description シナリオの自然言語表現と内部API（OSDVI）コードを併記表示するビューアコンポーネント。
+ * @returns {JSX.Element} シナリオリストを描画したUI
+ */
 export const ScenarioEditor = () => {
     const { scenarios } = useVehicleStore();
 
