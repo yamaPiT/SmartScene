@@ -11,8 +11,8 @@ import { ScenarioNode } from './scenarioTypes';
  * 
  * ■ ソフトウェア要求仕様書（SW105）とのトレーサビリティ:
  * - [REQ-F01] OSDVI 202603α準拠の状態管理
- * - [REQ-F02] スマートシナリオによる自動制御 (シナリオツリーの保持と実行管理)
- * - [REQ-F03] 手動操作との調停（マニュアルオーバーライドとRESTORE）
+ * - [REQ-U02] 雨天時スマートシーン等のシナリオツリー保持と実行管理
+ * - [REQ-U04] 手動操作との調停（マニュアルオーバーライドとRESTORE）
  * - [REQ-V03] アクチュエータ動作アニメーション（物理挙動の裏付けとなる状態更新）
  */
 
@@ -100,7 +100,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
     scenarios: [
         {
             id: 'scenario-rain',
-            description: '[REQ-004] 雨天時のスマートシーンシナリオ (雨量連動制御とRESTORE)',
+            description: '[REQ-U02] 雨天時のスマートシーンシナリオ (雨量連動制御とRESTORE)',
             type: 'BLOCK',
             children: [
                 {
@@ -180,7 +180,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         },
         {
             id: 'scenario-hazard',
-            description: '[REQ-005] サンキューハザードシナリオ (後方障害物距離連動とWAITアクション)',
+            description: '[REQ-U03] サンキューハザードシナリオ (後方障害物距離連動とWAITアクション)',
             type: 'BLOCK',
             children: [
                 {
@@ -321,7 +321,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
         set((state) => {
             const updates: any = { [key]: value };
 
-            // [REQ-001] [ 制約処理 ]: イグニッションがSTOPになったら、シナリオやワイパー等の全アクチュエータを強制停止
+            // [REQ-U01] [ 制約処理 ]: イグニッションがSTOPになったら、シナリオやワイパー等の全アクチュエータを強制停止
             if (key === "Vehicle.IgnitionState" && value === 'STOP') {
                 updates["Vehicle.Body.Windshield.Wiper.Mode"] = 'OFF';
                 updates["Vehicle.Exterior.Light.Defogger.IsActive"] = false;
@@ -333,7 +333,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
                 updates["Internal.LaneChangeStatus"] = 'NONE';
             }
 
-            // [REQ-004] [ エッジ検出 ]: 雨量(RainLevel)の連続的な変化を監視し、「雨が降り始めた瞬間」のみを捉えるためのフラグ管理
+            // [REQ-U02] [ エッジ検出 ]: 雨量(RainLevel)の連続的な変化を監視し、「雨が降り始めた瞬間」のみを捉えるためのフラグ管理
             if (key === "Vehicle.Exterior.Air.RainIntensity") {
                 const prevRain = state["Vehicle.Exterior.Air.RainIntensity"] as number;
                 const newRain = value as number;
@@ -369,7 +369,7 @@ export const useVehicleStore = create<VehicleStore>((set, get) => ({
                 };
             }
 
-            // [REQ-006] [ マニュアル・オーバーライド (手動介入の記録) ]
+            // [REQ-U04] [ マニュアル・オーバーライド (手動介入の記録) ]
             // 「ドライバー・イン・ザ・ループの原則」に基づき、スマートシナリオにより自動制御（スマートシーン）が稼働中であっても、
             // 「ドライバーの意志（手動操作）が最優先される」という仕様を実現するため、
             // ユーザーが何かしらのスイッチを操作した際には `ManualOverrideFlags` を true に記録し、自動制御からの要求をブロックする材料とする。

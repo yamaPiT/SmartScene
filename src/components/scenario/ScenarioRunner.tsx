@@ -7,8 +7,8 @@
  * マニュアルオーバーライドの調停を行うバックグラウンドコンポーネント（UIは持たない）。
  * 
  * ■ ソフトウェア要求仕様書（SW105）とのトレーサビリティ:
- * - [REQ-F02] スマートシナリオによる自動制御
- * - [REQ-F03] 手動操作との調停（マニュアルオーバーライド）
+ * - [REQ-U02] 雨天時スマートシーン等シナリオの自動制御
+ * - [REQ-U04] 手動操作との調停（マニュアルオーバーライド）
  */
 import { useEffect, useRef } from "react";
 import { useVehicleStore, USER_OVERRIDE_DURATION } from "@/lib/store";

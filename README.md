@@ -3,6 +3,8 @@
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/yamaPiT/SmartScene?label=最新バージョン)
 ![GitHub last commit](https://img.shields.io/github/last-commit/yamaPiT/SmartScene?label=最終更新)
 
+このワークスペースは、**SmartSceneのプログラム開発フォルダ**です。本プログラムはGitHub上に公開されています。
+
 本プロジェクトは、以下の2つの目的を持つ実験プロジェクトです。
 
 1. **DADA（Document-and-Agent-Driven Agile）開発プロセスの実験**: AIエージェントと人間が協調しながら、高品質なソフトウェアを高速に構築するための「DADAプロセス」の実験・デモ環境です。
@@ -143,35 +145,11 @@ npm run dev
 
 **DADA（Document-and-Agent-Driven Agile）** は、**開発ドキュメントを中心**にAIが自律的に開発を進めるアジャイル開発手法です。
 
-従来のアジャイル開発では、要求仕様がポストイットやホワイトボードに書かれて散逸したり、実装コードばかりが重視された結果、「要求仕様書・設計書とソースコードが乖離してしまう」という問題が少なからず発生していました。
-DADAプロセスはこの発想を反転させ、**開発ドキュメントをシステムの唯一の情報源（Single Source of Truth）** として常に最新に保ちながら開発を進めます。要求・設計・テスト仕様とソースコードが乖離する余地を、プロセスの構造そのもので排除しています。
+AIにコーディングを任せると「記憶喪失（コンテキスト制限による仕様の忘却）」や「ブラックボックス化（人間が理解できない内部メモの生成）」という問題が起きます。
+DADAプロセスでは、これを防ぐために**「人間が読める開発ドキュメント」を唯一の情報源（Single Source of Truth）**として扱います。
 
-### なぜAgentic Codingでもドキュメント中心なのか？
-
-「AIがコードを書いてくれるなら、ドキュメントはもう要らないのでは？」—— そう思われるかもしれません。しかし、AIにプログラミングを自律的に任せる手法（Agentic Coding）には、次の**2つの致命的な弱点**があります。
-
-| # | 問題 | 何が起きるか |
-|:---:|:---|:---|
-| 1 | **記憶喪失** | AIの一時メモリ（コンテキストウィンドウ）は有限です。対話が長くなると、過去に合意した仕様や設計が押し出されて消え、中・大規模開発では整合性がすぐに破綻します。 |
-| 2 | **ブラックボックス化** | この問題を防ぐためAI自身に内部メモを自動生成させるアプローチもありますが、それはAIの都合で書かれたものです。人間が読んでも理解しづらく、意図通りに品質を制御・レビューすることが困難です。 |
-
-つまり、AI時代であっても「人間が読み、理解し、承認できる開発ドキュメント」の重要性はむしろ増しているのです。
-
-### DADAの答え
-
-> **「一時的な会話データや内部メモではなく、人間が読める『開発ドキュメント』を唯一の情報源にする」**
-
-AIはコードを書く前に必ず「要求仕様書」や「設計書」を作成・更新し、**人間がそれを承認してから次の工程へ進みます**。ドキュメントは常にコードより先に更新されるため、「ドキュメントが古い」「仕様と実装が合っていない」という事態が構造的に発生しません。
-
-### 🌟 DADAプロセスを支える5つの仕組み
-
-| 仕組み | 説明 |
-|:---|:---|
-| **ドキュメント絶対主義と承認ゲート** | 決定事項はすべてドキュメント（Single Source of Truth）に集約されます。各工程で人間がドキュメントを承認するまで次の工程に進めず、仕様と実装のズレを構造的にゼロにします。 |
-| **アテンション・リセット（コンテキスト汚染防止）** | フェーズ移行時、AIが自律的に不要な過去のチャット履歴（議論・推測）を捨て、最新の承認済みドキュメントだけに集中し直します。AI特有の記憶喪失やハルシネーションを根本から回避します。 |
-| **Agenticな設計と自律カプセル化** | AIが自動デバッグしやすい「テスト容易性」と「疎結合アーキテクチャ」を設計段階で定義します。細かなコーディングはAI内に隠蔽（カプセル化）され、人間は最終テスト結果だけを評価します。 |
-| **一瞬の自己校正（Self-Correction）** | 各工程の作業後、AI自身が瞬時に「専門レビュアー」のペルソナへ切り替わり、人間の指示を待たずに品質基準に照らして自律的にチェックと修復を行います。 |
-| **ハイブリッド自律制御（トークンと品質の最適化）** | 通常時は「ASDoQ 6大品質特性」などの原則をAIが内在化した状態で高速動作します。大幅改訂時のみ外部ガイドラインをフルロードすることで、高い品質を保ちながらトークン消費を抑えます。 |
+AIは必ず「要求仕様書」や「設計書」を先に作成・更新し、**人間がそれを承認してから実装に進みます**。これにより、仕様と実装の乖離を構造的に防いでいます。
+（プロセスの詳細は、本リポジトリのベースとなった [AntigravityTemplate](https://github.com/yamaPiT/AntigravityTemplate) もご参照ください。）
 
 ---
 
@@ -205,43 +183,50 @@ AIが `requirements-engineer`（要求定義エンジニア）として起動し
 ```mermaid
 graph TD
     Start(["開始"]) --> UserReq["人間からの要求アイデア"]
-    
-    %% Phase 1
-    UserReq --> Req["Phase 1: 要求定義 - Requirements Engineer"]
-    Req --- ReqDoc[("SW105 ソフトウェア要求仕様書")]
-    Req --> ReqRev["自己レビュー - Self-Correction"]
-    ReqRev -- 修正・洗練 --> Req
+
+    subgraph P1 ["Phase 1: 要求定義"]
+        UserReq --> Req["Requirements Engineer"]
+        Req --- ReqDoc[("SW105 ソフトウェア要求仕様書")]
+        Req --> ReqRev["自己レビュー - Self-Correction"]
+        ReqRev -- 修正・洗練 --> Req
+    end
     ReqRev --> ReqHum["🔴 人間による確認・承認"]
     ReqHum -- 差し戻し --> Req
-    
-    %% Phase 2
-    ReqHum -- 承認 --> Arch["Phase 2: アーキテクチャ設計 - Architect"]
-    Arch --- ArchDoc[("SW205 アーキテクチャ設計書")]
-    Arch --> ArchRev["自己レビュー - Self-Correction"]
-    ArchRev -- 修正・洗練 --> Arch
+
+    subgraph P2 ["Phase 2: アーキテクチャ設計"]
+        ReqHum -- 承認 --> Arch["Architect"]
+        Arch --- ArchDoc[("SW205 アーキテクチャ設計書")]
+        Arch --> ArchRev["自己レビュー - Self-Correction"]
+        ArchRev -- 修正・洗練 --> Arch
+    end
     ArchRev --> ArchHum["🔴 人間による確認・承認"]
     ArchHum -- 差し戻し --> Arch
-    
-    %% Phase 3
-    ArchHum -- 承認 --> TestPlan["Phase 3: 総合テスト仕様策定 - Test Engineer"]
-    TestPlan --- TestDoc[("SWP6 総合テスト仕様書・報告書")]
-    TestPlan --> TestHum["🔴 人間による確認・承認"]
+
+    subgraph P3 ["Phase 3: 総合テスト仕様策定"]
+        ArchHum -- 承認 --> TestPlan["Test Engineer"]
+        TestPlan --- TestDoc[("SWP6 総合テスト仕様書・報告書")]
+        TestPlan --> TestRev["自己レビュー - Self-Correction"]
+        TestRev -- 修正・洗練 --> TestPlan
+    end
+    TestRev --> TestHum["🔴 人間による確認・承認"]
     TestHum -- 差し戻し --> TestPlan
-    
-    %% Phase 4
-    TestHum -- 承認 --> Impl["Phase 4: 実装・デバッグ - Programmer"]
-    Impl -.- ProgDoc[("プログラムコード / 自動テスト - 人間からは隠蔽")]
-    Impl --> ImplLoop["エラー自己修復ループ - 自動デバッグ"]
-    ImplLoop -- 自律修正 --> Impl
-    Impl -- 🔴 設計変更が必要な場合 --> Arch
-    
-    %% Phase 5: 成果報告と評価
-    ImplLoop -- オールグリーン --> Report["成果報告 - SWP6へテスト結果追記"]
-    Report --> Eval["Phase 5: 人間による評価と要求見直し"]
-    Eval --> Eval1["🔴 AIテスト結果の確認と補足 (手動テスト・SWP6追記)"]
-    Eval1 --> Eval2["🔴 動作を踏まえた要求仕様の変更検討"]
-    Eval2 -- 変更あり (ループバック) --> Req
-    Eval2 -- 変更なし (最終承認) --> End(["終了"])
+
+    subgraph P4 ["Phase 4: 実装・デバッグ"]
+        TestHum -- 承認 --> Impl["Programmer - 自律実装"]
+        Impl --- ProgDoc[("ソースコード")]
+        Impl --> ImplLoop["Unit Test Generator - 自律デバッグループ"]
+        ImplLoop -- テスト失敗 --> Impl
+        ImplLoop -- オールグリーン --> CodeRev["自己レビュー - Self-Correction"]
+        CodeRev -- コード規約・品質修正 --> Impl
+    end
+
+    subgraph P5 ["Phase 5: 人間による評価と要求見直し"]
+        CodeRev -- 完了報告 --> Report["成果報告 - SWP6へテスト結果追記"]
+        Report --> Eval1["🔴 AIテスト結果の確認と補足"]
+        Eval1 --> Eval2["🔴 動作を踏まえた要求仕様の変更検討"]
+    end
+    Eval2 -- 変更あり --> Req
+    Eval2 -- 変更なし --> End(["終了"])
 
     %% スタイル定義
     classDef human fill:#333333,stroke:#ff0000,stroke-width:4px,color:#ffffff;
@@ -251,8 +236,8 @@ graph TD
     classDef startEnd fill:#333333,stroke:#ffffff,stroke-width:2px,color:#ffffff;
 
     class UserReq,ReqHum,ArchHum,TestHum,Eval1,Eval2 human;
-    class Req,ReqRev,Arch,ArchRev,TestPlan,Report,Eval agent;
-    class Impl,ImplLoop hiddenAgent;
+    class Req,ReqRev,Arch,ArchRev,TestPlan,TestRev,Report agent;
+    class Impl,ImplLoop,CodeRev hiddenAgent;
     class ReqDoc,ArchDoc,ProgDoc,TestDoc doc;
     class Start,End startEnd;
 ```
@@ -269,8 +254,26 @@ graph TD
 | [`.agents/rules/`](.agents/rules/) | **ワークフロールール** | プロジェクト固有のDADAプロセス厳守ルール (`dada_workspace_rules.md`) |
 | [`docs/guidelines/`](docs/guidelines/) | **作業ガイドライン** | ドキュメントの基本フォーマット (`dada_document_guidelines.md`) やASDoQ品質モデル等。デフォルトはこれに従います。 |
 | [`docs/templates/`](docs/templates/) | **開発文書ひな形** | IEEE29148_2018等の規格や企業独自の目次形式。**ユーザが「IEEE29148に準拠」「企業のテンプレートを使用」と明示的に指示した場合のみ、該当するひな形を読み込み優先**します。 |
-| [`docs/artifact/`](docs/artifact/) | **開発成果物と帳票** | 人間が確認・承認するドキュメント (要求・設計・テスト仕様等)。および、**人間とAIが協働するためのレビュー記録表（`REV101`）とバグ管理表（`BUG101`）**。 |
+| [`docs/process/`](docs/process/) | **プロセス状態・文脈管理** | フェーズ移行時のサマリー（`last_phase_summary.md`）やPhase 5評価ガイドなど、開発プロセスの状態を記録・復元し、アテンション・リセットを支えるための文書。 |
+| [`docs/artifact/`](docs/artifact/) | **開発成果物と帳票** | 人間が確認・承認するドキュメント (要求・設計・テスト仕様等)。および、**レビュー記録表（`REV101`）・バグ管理表（`BUG101`）・トレーサビリティ・マトリクス（`TM101`・推奨）**。 |
 | [`.cursor/`](.cursor/) | **全体制御** | 全ルールの定義場所 (`project-rules.mdc`等) — プロジェクト共通原則はここに集約 |
+
+### スキル・ロール一覧
+
+| ファイル | 役割 | 種別 |
+| :--- | :--- | :--- |
+| `roles/requirements-engineer.md` | 要求定義の壁打ちと仕様書作成 | 本体Role |
+| `roles/architect.md` | アーキテクチャ設計 | 本体Role |
+| `roles/programmer.md` | 設計に基づく実装 | 本体Role |
+| `roles/test-engineer.md` | テスト設計・実行・報告書作成 | 本体Role |
+| `roles/requirements-reviewer.md` | 要求仕様書の品質レビュー | 自己校正ペルソナ |
+| `roles/architecture-reviewer.md` | 設計書の品質レビュー | 自己校正ペルソナ |
+| `roles/code-reviewer.md` | ソースコードの品質レビュー | 自己校正ペルソナ |
+| `roles/test-reviewer.md` | テスト結果の品質レビュー | 自己校正ペルソナ |
+| `skills/context-reset/` | フェーズ移行時のコンテキスト洗浄（アテンション・リセット） | コアスキル |
+| `skills/unit-test-generator/` | 自律的なテストコード生成とデバッグ実行 | 開発支援スキル |
+| `skills/document-writer/` | 開発ドキュメントの物理的な書き出しと整合性維持 | 基盤スキル |
+| `skills/context7-mcp/` | 最新ライブラリ情報の検索とドキュメント参照 | 調査スキル |
 
 ---
 
@@ -356,6 +359,12 @@ AIが最新のライブラリのドキュメントを自律的に参照できる
 >
 > **【バージョン管理について】**<br>
 > 本プロジェクトでは、Gitの `tag` 機能で `v1.0.0` のように版数管理することを推奨します。DADAプロセスによる開発の節目を明確に記録できます。
+
+---
+
+## 📄 ライセンス
+
+このプログラムは [MIT License](LICENSE) の下で公開されています。
 
 ---
 *Created and Maintained by Masa & Hal*
